@@ -59,6 +59,13 @@ impl VirtualMachine {
         panic!("stack is empty");
     }
 
+    fn pop(&mut self) -> Token {
+        if let Some(token) = self.stack.pop() {
+            return token;
+        }
+        panic!("stack is empty");
+    }
+
     fn parse(&mut self, raw_token: &str) -> Token {
         if self.in_mode(DEF) {
             if self.syms.iter().any(|e| *e == raw_token) {
@@ -160,6 +167,34 @@ impl VirtualMachine {
                     println!("{}", item.to_string());
                 }
             }
+            Drop => { self.stack.pop(); }
+            Swap => {
+                let a = self.pop();
+                let b = self.pop();
+                self.stack.push(a);
+                self.stack.push(b);
+            }
+            Rot => {
+                let a = self.pop();
+                let b = self.pop();
+                let c = self.pop();
+                self.stack.push(b);
+                self.stack.push(a);
+                self.stack.push(c);
+            }
+            Pick => todo!(),
+            Over => {
+                let a = self.pop();
+                let b = self.pop();
+                self.stack.push(b);
+                self.stack.push(a);
+                self.stack.push(b);
+            }
+            Dup => {
+                let a = self.pop();
+                self.stack.push(a);
+                self.stack.push(a);
+            }
             Include => todo!(),
             Debug => todo!(),
             Def => todo!(),
@@ -191,12 +226,6 @@ impl VirtualMachine {
             Not => todo!(),
             True => todo!(),
             False => todo!(),
-            Drop => todo!(),
-            Swap => todo!(),
-            Rot => todo!(),
-            Pick => todo!(),
-            Over => todo!(),
-            Dup => todo!(),
             Assign => todo!(),
             Read => todo!(),
             Write => todo!(),
