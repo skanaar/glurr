@@ -51,31 +51,33 @@ impl VirtualMachine {
         }
     }
 
-    fn interpret(&mut self, source: Vec<&str>) {
-        while self.index < source.len() {
-            self.index = self.evaluate(self.get_token(source, self.index));
-        }
-    }
-
-    fn get_token(&mut self, source: Vec<&str>, index: usize) -> Token {
-        if let Some(token) = self.tokens.get(index) {
-            return token.clone();
-        } else if let Some(raw_token) = source.get(index) {
-            let token = self.parse(*raw_token);
-            self.tokens.push(token.clone());
-            return token;
-        } else {
-            return Token::End;
-        }
-    }
-
-    fn evaluate(&self, token: Token) -> usize {
+    fn parse(&mut self, raw_token: &str) -> Token {
         if self.in_mode(DEF) {
-            if self.syms.iter().any(|e| e == token) {
+            if self.syms.iter().any(|e| *e == raw_token) {
                 panic!("Symbol already defined");
             }
-            self.syms.push(token.to_string());
+            self.syms.push(raw_token.to_string());
             self.tokens.push(Token::Symbol(self.syms.len()));
+            return Token::Native(Native::Def);
+        }
+        if let Some(native) = self.natives.get(raw_token) {
+            return Token::Native(*native)
+        }
+        if let Some(i) = self.dict.iter().position(|w| w.word == raw_token) {
+            return Token::Word(i)
+        }
+        if let Some(number) = raw_token.parse::<f64>().ok() {
+            return Token::Number(number);
+        }
+        if raw_token.starts_with("\"") && raw_token.ends_with("\"") {
+            self.strs.push(raw_token.to_string());
+            return Token::String(self.strs.len());
+        }
+        return Token::Empty
+    }
+
+    fn evaluate(&mut self, token: Token) -> usize {
+        if self.in_mode(DEF) {
             return self.index + 1;
         }
         if self.in_mode(COMPILE) {
@@ -95,36 +97,35 @@ impl VirtualMachine {
                     return ret;
                 }
             }
+            Token::Native(Native::Dot) => {
+                println!("{}", self.stack.pop().unwrap().to_string());
+            }
+            Token::Native(Native::Dots) => {
+                for item in self.stack.clone() {
+                    println!("{}", item.to_string());
+                }
+            }
             tok => { self.stack.push(tok) }
 
         }
         return self.index + 1;
     }
 
-    fn parse(&self, raw_token: &str) -> Token {
-        if let Some(native) = self.natives.get(raw_token) {
-            return Token::Native(*native)
+    fn interpret(&mut self, source: String) {
+        let raw_tokens: Vec<&str> = source
+            .split(char::is_whitespace)
+            .map(|s| s)
+            .collect();
+        self.index = 0;
+        while self.index < raw_tokens.len() {
+            let token = if self.index < self.tokens.len() {
+                self.tokens[self.index]
+            } else {
+                self.parse(raw_tokens[self.index])
+            };
+            self.index = self.evaluate(token);
         }
-        if let Some(i) = self.dict.iter().position(|w| w.word == raw_token) {
-            return Token::Word(i)
-        }
-        if let Some(number) = raw_token.parse::<f64>().ok() {
-            return Token::Number(number);
-        }
-        if raw_token.starts_with("\"") && raw_token.ends_with("\"") {
-            return Token::String(raw_token.to_string());
-        }
-        return Token::Empty
     }
-}
-
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    let file_path = &args[1];
-    let contents = fs::read_to_string(file_path)
-        .expect("Should have been able to read the file");
-
-    let mut vm = VirtualMachine::new();
 
     // Glurr source code
     // def foo { 8 } ;
@@ -137,29 +138,15 @@ fn main() {
     // [0,3] c[compile] {0:foo:nil} "native:def word:0 native:{ num:8"
     // [0,3] c[] {0:foo:nil} "native:def word:0 native:{ num:8 native:}"
     // [] c[] {0:foo:3} "native:def word:0 native:{ num:8 native:} native:;"
+}
 
-    // interpret
-    for token in contents.split(char::is_whitespace) {
-        if token == "" { vm.index += 1; continue; }
-        else if token == ";" {
-            // ...
-        }
-        println!("{}", token);
-    }
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    let file_path = &args[1];
+    let contents = fs::read_to_string(file_path)
+        .expect("Should have been able to read the file");
 
-    // execute
-    for token in &vm.tokens {
-        match token {
-            Token::Number(x) => println!("Number: {}", x),
-            Token::Jump(x) => println!("Jump {}", x),
-            Token::Symbol(x) => println!("Symbol {}", x),
-            Token::Word(x) => println!("Word {}", x),
-            Token::Bool(x) => println!("Bool {}", x),
-            Token::String(x) => println!("String {}", x),
-            Token::Control(x) => println!("Control {}", x),
-            Token::Native(_) => println!("Native"),
-            Token::Empty => println!("Empty"),
-            Token::End => println!("End"),
-        }
-    }
+    let mut vm = VirtualMachine::new();
+    vm.interpret(contents);
+
 }

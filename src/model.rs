@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Native {
@@ -56,18 +56,34 @@ pub enum Native {
     Write,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Token {
     Native(Native),
     Control(f64),
     Jump(usize),
     Number(f64),
     Bool(bool),
-    String(String),
+    String(usize),
     Word(usize),
     Symbol(usize),
     Empty,
     End,
+}
+impl Token {
+    pub(crate) fn to_string(&self) -> String {
+        match self {
+            Token::Native(_) => format!("Native()"),
+            Token::Control(value) => format!("Ctrl({})", value),
+            Token::Jump(index) => format!("Jump({})", index),
+            Token::Number(value) => format!("Number({})", value),
+            Token::Bool(value) => format!("Bool({})", value),
+            Token::String(value) => format!("String({})", value),
+            Token::Word(index) => format!("Word({})", index),
+            Token::Symbol(index) => format!("Symbol({})", index),
+            Token::Empty => "Empty".to_string(),
+            Token::End => "End".to_string(),
+        }
+    }
 }
 
 pub fn create_natives() -> HashMap<&'static str, Native> {
