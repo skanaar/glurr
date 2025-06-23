@@ -3,9 +3,10 @@ use std::env;
 use std::fs;
 
 mod model;
-use model::Native;
+use model::Nat;
 use model::create_natives;
 use model::Token;
+use model::Token::*;
 
 const DEF: f64 = 0.0;
 const COMPILE: f64 = 1.0;
@@ -16,7 +17,7 @@ struct Word {
 }
 
 struct VirtualMachine {
-    natives: HashMap<&'static str, Native>,
+    natives: HashMap<&'static str, Nat>,
     index: usize,
     tokens: Vec<Token>,
     stack: Vec<Token>,
@@ -46,9 +47,16 @@ impl VirtualMachine {
 impl VirtualMachine {
     fn in_mode(&self, mode: f64) -> bool {
         return match self.ctrl.last() {
-            Some(Token::Control(x)) => *x == mode,
+            Some(Control(x)) => *x == mode,
             _ => false,
         }
+    }
+
+    fn pop_num(&mut self) -> f64 {
+        if let Some(Token::Number(value)) = self.stack.pop() {
+            return value;
+        }
+        panic!("stack is empty");
     }
 
     fn parse(&mut self, raw_token: &str) -> Token {
@@ -57,23 +65,23 @@ impl VirtualMachine {
                 panic!("Symbol already defined");
             }
             self.syms.push(raw_token.to_string());
-            self.tokens.push(Token::Symbol(self.syms.len()));
-            return Token::Native(Native::Def);
+            self.tokens.push(Symbol(self.syms.len()));
+            return Native(Nat::Def);
         }
         if let Some(native) = self.natives.get(raw_token) {
-            return Token::Native(*native)
+            return Native(*native)
         }
         if let Some(i) = self.dict.iter().position(|w| w.word == raw_token) {
-            return Token::Word(i)
+            return Word(i)
         }
         if let Some(number) = raw_token.parse::<f64>().ok() {
-            return Token::Number(number);
+            return Number(number);
         }
         if raw_token.starts_with("\"") && raw_token.ends_with("\"") {
             self.strs.push(raw_token.to_string());
-            return Token::String(self.strs.len());
+            return Str(self.strs.len());
         }
-        return Token::Empty
+        return Empty
     }
 
     fn evaluate(&mut self, token: Token) -> usize {
@@ -81,32 +89,117 @@ impl VirtualMachine {
             return self.index + 1;
         }
         if self.in_mode(COMPILE) {
-            if token == Token::Native(Native::CloseBrace) {
+            if token == Native(Nat::CloseBrace) {
                 self.ctrl.pop();
             }
             return self.index + 1;
         }
         match token {
-            Token::Native(Native::Def) => self.ctrl.push(Token::Control(DEF)),
-            Token::Native(Native::OpenBrace) => {
-                self.ctrl.push(Token::Control(COMPILE));
-                self.stack.push(Token::Jump(self.index + 1));
+            Native(nat) => {
+                return self.evaluate_native(nat);
             }
-            Token::Native(Native::CloseBrace) => {
-                if let Some(Token::Jump(ret)) = self.ctrl.pop() {
-                    return ret;
-                }
+            tok => { self.stack.push(tok) }
+
+        }
+        return self.index + 1;
+    }
+
+    fn evaluate_native(&mut self, native: Nat) -> usize {
+        use model::Nat::*;
+        match native {
+            Plus => {
+                let sum = self.pop_num() + self.pop_num();
+                self.stack.push(Token::Number(sum));
             }
-            Token::Native(Native::Dot) => {
-                println!("{}", self.stack.pop().unwrap().to_string());
+            Minus => {
+                let rhs = self.pop_num();
+                let lhs = self.pop_num();
+                self.stack.push(Token::Number(lhs - rhs));
             }
-            Token::Native(Native::Dots) => {
+            Multiply => {
+                let prod = self.pop_num() + self.pop_num();
+                self.stack.push(Token::Number(prod));
+            }
+            Divide => {
+                let rhs = self.pop_num();
+                let lhs = self.pop_num();
+                self.stack.push(Token::Number(lhs / rhs));
+            }
+            Pow => {
+                let rhs = self.pop_num();
+                let lhs = self.pop_num();
+                self.stack.push(Token::Number(lhs.powf(rhs)));
+            }
+            Mod => {
+                let rhs = self.pop_num();
+                let lhs = self.pop_num();
+                self.stack.push(Token::Number(lhs.rem_euclid(rhs)));
+            }
+            Floor => {
+                let value = self.pop_num();
+                self.stack.push(Token::Number(value.floor()));
+            }
+            Ceil => {
+                let value = self.pop_num();
+                self.stack.push(Token::Number(value.ceil()));
+            }
+            Round => {
+                let value = self.pop_num();
+                self.stack.push(Token::Number(value.round()));
+            }
+            Abs => {
+                let value = self.pop_num();
+                self.stack.push(Token::Number(value.abs()));
+            }
+            Neg => {
+                let value = self.pop_num();
+                self.stack.push(Token::Number(-value));
+            }
+            Dots => {
                 for item in self.stack.clone() {
                     println!("{}", item.to_string());
                 }
             }
-            tok => { self.stack.push(tok) }
-
+            Include => todo!(),
+            Debug => todo!(),
+            Def => todo!(),
+            Quote => todo!(),
+            OpenBrace => todo!(),
+            CloseBrace => todo!(),
+            Semicolon => todo!(),
+            Invoke => todo!(),
+            ByteArray => todo!(),
+            Set => todo!(),
+            Get => todo!(),
+            DisplayImage => todo!(),
+            Questionmark => todo!(),
+            If => todo!(),
+            Loop => todo!(),
+            Range => todo!(),
+            Enumerate => todo!(),
+            LeaveIf => todo!(),
+            I => todo!(),
+            OpenParen => todo!(),
+            Comment => todo!(),
+            StoreCtrl => todo!(),
+            ReadCtrl => todo!(),
+            CopyCtrl => todo!(),
+            Dot => todo!(),
+            Equal => todo!(),
+            GreaterThan => todo!(),
+            LessThan => todo!(),
+            Not => todo!(),
+            True => todo!(),
+            False => todo!(),
+            Drop => todo!(),
+            Swap => todo!(),
+            Rot => todo!(),
+            Pick => todo!(),
+            Over => todo!(),
+            Dup => todo!(),
+            Assign => todo!(),
+            Read => todo!(),
+            Write => todo!(),
         }
         return self.index + 1;
     }
