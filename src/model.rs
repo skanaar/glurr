@@ -57,7 +57,7 @@ pub enum Nat {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub enum Mode { Compile, Def }
+pub enum Mode { Compile, Def, Quote }
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Token {
@@ -77,6 +77,7 @@ impl Token {
             Token::Native(_) => format!("Native()"),
             Token::Control(Mode::Compile) => "Compile".to_string(),
             Token::Control(Mode::Def) => "Def".to_string(),
+            Token::Control(Mode::Quote) => "Quote".to_string(),
             Token::Jump(index) => format!("Jump({})", index),
             Token::Number(value) => format!("Number({})", value),
             Token::Bool(value) => format!("Bool({})", value),

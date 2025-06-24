@@ -213,7 +213,7 @@ impl VirtualMachine {
             Def => {
                 self.ctrl.push(Control(Mode::Def));
             }
-            Quote => todo!("Quote"),
+            Quote => self.ctrl.push(Control(Mode::Quote)),
             OpenBrace => {
                 self.ctrl.push(Control(Mode::Compile));
                 self.stack.push(Jump(self.index + 1));
