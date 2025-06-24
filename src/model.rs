@@ -56,10 +56,13 @@ pub enum Nat {
     Write,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
+pub enum Mode { Compile, Def }
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum Token {
     Native(Nat),
-    Control(f64),
+    Control(Mode),
     Jump(usize),
     Number(f64),
     Bool(bool),
@@ -67,13 +70,13 @@ pub enum Token {
     Word(usize),
     Symbol(usize),
     Empty,
-    End,
 }
 impl Token {
     pub(crate) fn to_string(&self) -> String {
         match self {
             Token::Native(_) => format!("Native()"),
-            Token::Control(value) => format!("Ctrl({})", value),
+            Token::Control(Mode::Compile) => "Compile".to_string(),
+            Token::Control(Mode::Def) => "Def".to_string(),
             Token::Jump(index) => format!("Jump({})", index),
             Token::Number(value) => format!("Number({})", value),
             Token::Bool(value) => format!("Bool({})", value),
@@ -81,7 +84,6 @@ impl Token {
             Token::Word(index) => format!("Word({})", index),
             Token::Symbol(index) => format!("Symbol({})", index),
             Token::Empty => "Empty".to_string(),
-            Token::End => "End".to_string(),
         }
     }
 }

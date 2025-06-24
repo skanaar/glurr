@@ -4,14 +4,12 @@ use std::fs;
 
 mod model;
 use model::Nat;
+use model::Mode;
 use model::create_natives;
 use model::Token;
 use model::Token::*;
 
-const DEF: f64 = 0.0;
-const COMPILE: f64 = 1.0;
-
-struct Word {
+struct DictEntry {
     word: String,
     jump: usize,
 }
@@ -24,8 +22,7 @@ struct VirtualMachine {
     ctrl: Vec<Token>,
     syms: Vec<String>,
     strs: Vec<String>,
-    vars: Vec<String>,
-    dict: Vec<Word>,
+    dict: Vec<DictEntry>,
 }
 
 impl VirtualMachine {
@@ -38,16 +35,15 @@ impl VirtualMachine {
             ctrl: Vec::new(),
             syms: Vec::new(),
             strs: Vec::new(),
-            vars: Vec::new(),
             dict: Vec::new(),
         }
     }
 }
 
 impl VirtualMachine {
-    fn in_mode(&self, mode: f64) -> bool {
+    fn in_mode(&self, mode: Mode) -> bool {
         return match self.ctrl.last() {
-            Some(Control(x)) => *x == mode,
+            Some(Control(m)) => *m == mode,
             _ => false,
         }
     }
@@ -67,13 +63,13 @@ impl VirtualMachine {
     }
 
     fn parse(&mut self, raw_token: &str) -> Token {
-        if self.in_mode(DEF) {
+        if self.in_mode(Mode::Def) {
+            self.ctrl.pop();
             if self.syms.iter().any(|e| *e == raw_token) {
-                panic!("Symbol already defined");
+                panic!("Symbol {} already defined", raw_token);
             }
             self.syms.push(raw_token.to_string());
-            self.tokens.push(Symbol(self.syms.len()));
-            return Native(Nat::Def);
+            return Symbol(self.syms.len() - 1);
         }
         if let Some(native) = self.natives.get(raw_token) {
             return Native(*native)
@@ -92,21 +88,32 @@ impl VirtualMachine {
     }
 
     fn evaluate(&mut self, token: Token) -> usize {
-        if self.in_mode(DEF) {
+        if self.in_mode(Mode::Def) {
             return self.index + 1;
         }
-        if self.in_mode(COMPILE) {
-            if token == Native(Nat::CloseBrace) {
+        if self.in_mode(Mode::Compile) {
+            if token == Native(Nat::OpenBrace) {
+                self.ctrl.push(Control(Mode::Compile));
+            }
+            else if token == Native(Nat::CloseBrace) {
                 self.ctrl.pop();
             }
             return self.index + 1;
         }
         match token {
-            Native(nat) => {
-                return self.evaluate_native(nat);
+            Native(nat) => return self.evaluate_native(nat),
+            Number(x) => self.stack.push(Number(x)),
+            Control(_) => panic!("cannot evaluate a control token"),
+            Jump(index) => {
+                self.ctrl.push(Jump(self.index + 1));
+                return index;
             }
-            tok => { self.stack.push(tok) }
-
+            Token::Word(i) => {
+                self.ctrl.push(Jump(self.index + 1));
+                return self.dict[i].jump
+            }
+            Bool(x) => self.stack.push(Bool(x)),
+            tok => self.stack.push(tok)
         }
         return self.index + 1;
     }
@@ -182,7 +189,13 @@ impl VirtualMachine {
                 self.stack.push(a);
                 self.stack.push(c);
             }
-            Pick => todo!(),
+            Pick => {
+                let offset = self.stack.len() - self.pop_num() as usize;
+                if let Some(token) = self.stack.get(offset) {
+                    self.stack.push(token.clone());
+                }
+                panic!("stack is empty");
+            }
             Over => {
                 let a = self.pop();
                 let b = self.pop();
@@ -195,40 +208,60 @@ impl VirtualMachine {
                 self.stack.push(a);
                 self.stack.push(a);
             }
-            Include => todo!(),
-            Debug => todo!(),
-            Def => todo!(),
-            Quote => todo!(),
-            OpenBrace => todo!(),
-            CloseBrace => todo!(),
-            Semicolon => todo!(),
-            Invoke => todo!(),
-            ByteArray => todo!(),
-            Set => todo!(),
-            Get => todo!(),
-            DisplayImage => todo!(),
-            Questionmark => todo!(),
-            If => todo!(),
-            Loop => todo!(),
-            Range => todo!(),
-            Enumerate => todo!(),
-            LeaveIf => todo!(),
-            I => todo!(),
-            OpenParen => todo!(),
-            Comment => todo!(),
-            StoreCtrl => todo!(),
-            ReadCtrl => todo!(),
-            CopyCtrl => todo!(),
-            Dot => todo!(),
-            Equal => todo!(),
-            GreaterThan => todo!(),
-            LessThan => todo!(),
-            Not => todo!(),
-            True => todo!(),
-            False => todo!(),
-            Assign => todo!(),
-            Read => todo!(),
-            Write => todo!(),
+            Include => todo!("Include"),
+            Debug => todo!("Debug"),
+            Def => {
+                self.ctrl.push(Control(Mode::Def));
+            }
+            Quote => todo!("Quote"),
+            OpenBrace => {
+                self.ctrl.push(Control(Mode::Compile));
+                self.stack.push(Jump(self.index + 1));
+            }
+            CloseBrace => {
+                if let Some(Jump(index)) = self.ctrl.pop() {
+                    return index;
+                }
+                panic!("no return jump on ctrl stack");
+            }
+            Semicolon => {
+                if let Some(Jump(jump)) = self.stack.pop() {
+                    if let Some(Symbol(i)) = self.stack.pop() {
+                        let symbol = &self.syms[i];
+                        self.dict.push(DictEntry {
+                            word: symbol.clone(),
+                            jump: jump
+                        })
+                    } else { panic!("; requires a symbol") }
+                } else { panic!("; requires a symbol") }
+            }
+            Invoke => todo!("Invoke"),
+            ByteArray => todo!("ByteArray"),
+            Set => todo!("Set"),
+            Get => todo!("Get"),
+            DisplayImage => todo!("DisplayImage"),
+            Questionmark => todo!("Questionmark"),
+            If => todo!("If"),
+            Loop => todo!("Loop"),
+            Range => todo!("Range"),
+            Enumerate => todo!("Enumerate"),
+            LeaveIf => todo!("LeaveIf"),
+            I => todo!("I"),
+            OpenParen => todo!("OpenParen"),
+            Comment => todo!("Comment"),
+            StoreCtrl => todo!("StoreCtrl"),
+            ReadCtrl => todo!("ReadCtrl"),
+            CopyCtrl => todo!("CopyCtrl"),
+            Dot => todo!("Dot"),
+            Equal => todo!("Equal"),
+            GreaterThan => todo!("GreaterThan"),
+            LessThan => todo!("LessThan"),
+            Not => todo!("Not"),
+            True => self.stack.push(Bool(true)),
+            False => self.stack.push(Bool(false)),
+            Assign => todo!("Assign"),
+            Read => todo!("Read"),
+            Write => todo!("Write"),
         }
         return self.index + 1;
     }
@@ -243,7 +276,9 @@ impl VirtualMachine {
             let token = if self.index < self.tokens.len() {
                 self.tokens[self.index]
             } else {
-                self.parse(raw_tokens[self.index])
+                let token = self.parse(raw_tokens[self.index]);
+                self.tokens.push(token);
+                token
             };
             self.index = self.evaluate(token);
         }
