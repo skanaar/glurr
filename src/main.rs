@@ -2,6 +2,9 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 
+mod stack;
+use stack::Stack;
+
 mod model;
 use model::Nat;
 use model::Mode;
@@ -46,20 +49,6 @@ impl VirtualMachine {
             Some(Control(m)) => *m == mode,
             _ => false,
         }
-    }
-
-    fn pop_num(&mut self) -> f64 {
-        if let Some(Token::Number(value)) = self.stack.pop() {
-            return value;
-        }
-        panic!("stack is empty");
-    }
-
-    fn pop(&mut self) -> Token {
-        if let Some(token) = self.stack.pop() {
-            return token;
-        }
-        panic!("stack is empty");
     }
 
     fn parse(&mut self, raw_token: &str) -> Token {
@@ -122,51 +111,51 @@ impl VirtualMachine {
         use model::Nat::*;
         match native {
             Plus => {
-                let sum = self.pop_num() + self.pop_num();
+                let sum = self.stack.pop_num() + self.stack.pop_num();
                 self.stack.push(Token::Number(sum));
             }
             Minus => {
-                let rhs = self.pop_num();
-                let lhs = self.pop_num();
+                let rhs = self.stack.pop_num();
+                let lhs = self.stack.pop_num();
                 self.stack.push(Token::Number(lhs - rhs));
             }
             Multiply => {
-                let prod = self.pop_num() + self.pop_num();
+                let prod = self.stack.pop_num() + self.stack.pop_num();
                 self.stack.push(Token::Number(prod));
             }
             Divide => {
-                let rhs = self.pop_num();
-                let lhs = self.pop_num();
+                let rhs = self.stack.pop_num();
+                let lhs = self.stack.pop_num();
                 self.stack.push(Token::Number(lhs / rhs));
             }
             Pow => {
-                let rhs = self.pop_num();
-                let lhs = self.pop_num();
+                let rhs = self.stack.pop_num();
+                let lhs = self.stack.pop_num();
                 self.stack.push(Token::Number(lhs.powf(rhs)));
             }
             Mod => {
-                let rhs = self.pop_num();
-                let lhs = self.pop_num();
+                let rhs = self.stack.pop_num();
+                let lhs = self.stack.pop_num();
                 self.stack.push(Token::Number(lhs.rem_euclid(rhs)));
             }
             Floor => {
-                let value = self.pop_num();
+                let value = self.stack.pop_num();
                 self.stack.push(Token::Number(value.floor()));
             }
             Ceil => {
-                let value = self.pop_num();
+                let value = self.stack.pop_num();
                 self.stack.push(Token::Number(value.ceil()));
             }
             Round => {
-                let value = self.pop_num();
+                let value = self.stack.pop_num();
                 self.stack.push(Token::Number(value.round()));
             }
             Abs => {
-                let value = self.pop_num();
+                let value = self.stack.pop_num();
                 self.stack.push(Token::Number(value.abs()));
             }
             Neg => {
-                let value = self.pop_num();
+                let value = self.stack.pop_num();
                 self.stack.push(Token::Number(-value));
             }
             Dots => {
@@ -174,37 +163,42 @@ impl VirtualMachine {
                     println!("{}", item.to_string());
                 }
             }
+            CtrlDots => {
+                for item in self.ctrl.clone() {
+                    println!("{}", item.to_string());
+                }
+            }
             Drop => { self.stack.pop(); }
             Swap => {
-                let a = self.pop();
-                let b = self.pop();
+                let a = self.stack.popp();
+                let b = self.stack.popp();
                 self.stack.push(a);
                 self.stack.push(b);
             }
             Rot => {
-                let a = self.pop();
-                let b = self.pop();
-                let c = self.pop();
+                let a = self.stack.popp();
+                let b = self.stack.popp();
+                let c = self.stack.popp();
                 self.stack.push(b);
                 self.stack.push(a);
                 self.stack.push(c);
             }
             Pick => {
-                let offset = self.stack.len() - self.pop_num() as usize;
+                let offset = self.stack.len() - self.stack.pop_num() as usize;
                 if let Some(token) = self.stack.get(offset) {
                     self.stack.push(token.clone());
                 }
                 panic!("stack is empty");
             }
             Over => {
-                let a = self.pop();
-                let b = self.pop();
+                let a = self.stack.popp();
+                let b = self.stack.popp();
                 self.stack.push(b);
                 self.stack.push(a);
                 self.stack.push(b);
             }
             Dup => {
-                let a = self.pop();
+                let a = self.stack.popp();
                 self.stack.push(a);
                 self.stack.push(a);
             }
@@ -235,13 +229,32 @@ impl VirtualMachine {
                     } else { panic!("; requires a symbol") }
                 } else { panic!("; requires a symbol") }
             }
+            StoreCtrl => {
+                let value = self.stack.popp();
+                self.ctrl.push(value)
+            },
+            ReadCtrl => {
+                if let Some(value) = self.ctrl.pop() {
+                    self.stack.push(value)
+                }
+            },
+            CopyCtrl => {
+                if let Some(value) = self.ctrl.last() {
+                    self.stack.push(value.clone())
+                }
+            },
             Invoke => todo!("Invoke"),
             ByteArray => todo!("ByteArray"),
             Set => todo!("Set"),
             Get => todo!("Get"),
             DisplayImage => todo!("DisplayImage"),
             Questionmark => todo!("Questionmark"),
-            If => todo!("If"),
+            If => {
+                let no = self.stack.pop_jump();
+                let yes = self.stack.pop_jump();
+                let cond = self.stack.pop_bool();
+                return if cond { yes } else { no }
+            },
             Loop => todo!("Loop"),
             Range => todo!("Range"),
             Enumerate => todo!("Enumerate"),
@@ -249,9 +262,6 @@ impl VirtualMachine {
             I => todo!("I"),
             OpenParen => todo!("OpenParen"),
             Comment => todo!("Comment"),
-            StoreCtrl => todo!("StoreCtrl"),
-            ReadCtrl => todo!("ReadCtrl"),
-            CopyCtrl => todo!("CopyCtrl"),
             Dot => todo!("Dot"),
             Equal => todo!("Equal"),
             GreaterThan => todo!("GreaterThan"),

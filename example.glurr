@@ -1,2 +1,5 @@
-def foo { 8 } ;
-foo dup + ...
+def foo { 7 } ;
+def mult { * } ;
+foo dup +
+2.3 foo mult
+3 10 / ...
