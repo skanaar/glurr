@@ -1,5 +1,7 @@
 def foo { 7 } ;
 def mult { * } ;
+{ i } 0 6 range enumerate
+true
 foo dup +
 2.3 foo mult
 3 10 / ...
