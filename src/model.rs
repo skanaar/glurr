@@ -25,6 +25,7 @@ pub enum Nat {
     LeaveIf,
     I,
     OpenParen,
+    CloseParen,
     Comment,
     Dot,
     Dots,
@@ -58,7 +59,7 @@ pub enum Nat {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-pub enum Mode { Compile, Def, Quote }
+pub enum Mode { Compile, Def, Quote, Comment }
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Token {
@@ -79,7 +80,8 @@ impl Token {
             Token::Control(Mode::Compile) => "Compile".to_string(),
             Token::Control(Mode::Def) => "Def".to_string(),
             Token::Control(Mode::Quote) => "Quote".to_string(),
-            Token::Jump(index) => format!("Jump {}", index),
+            Token::Control(Mode::Comment) => "Comment".to_string(),
+            Token::Jump(index) => format!("Jump({})", index),
             Token::Number(value) => value.to_string(),
             Token::Bool(value) => value.to_string(),
             Token::Str(value) => format!("String({})", value),
@@ -115,6 +117,7 @@ pub fn create_natives() -> HashMap<&'static str, Nat> {
         ("leave-if", Nat::LeaveIf),
         ("i", Nat::I),
         ("(", Nat::OpenParen),
+        (")", Nat::CloseParen),
         ("--", Nat::Comment),
         (".", Nat::Dot),
         ("...", Nat::Dots),

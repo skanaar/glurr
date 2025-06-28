@@ -20,14 +20,14 @@ impl Stack<Token> for Vec<Token> {
         panic!("expected a number");
     }
 
-    fn pop_jump(&mut self) -> usize {
-        if let Some(Token::Jump(value)) = self.pop() { return value }
-        panic!("expected a jump");
-    }
-
     fn pop_bool(&mut self) -> bool {
         if let Some(Token::Bool(value)) = self.pop() { return value }
         panic!("expected a bool");
+    }
+
+    fn pop_jump(&mut self) -> usize {
+        if let Some(Token::Jump(value)) = self.pop() { return value }
+        panic!("expected a jump");
     }
 
     fn print(&self) {

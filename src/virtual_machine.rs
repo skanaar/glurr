@@ -56,6 +56,12 @@ impl VirtualMachine {
     }
 
     pub fn parse(&mut self, raw_token: &str) -> Token {
+        if let Some(Control(Mode::Comment)) = self.ctrl.last() {
+            if let Some(Nat::CloseParen) = self.natives.get(raw_token) {
+                self.ctrl.pop();
+            }
+            return Empty
+        }
         if let Some(Control(Mode::Def)) = self.ctrl.last() {
             self.ctrl.pop();
             if self.syms.iter().any(|e| *e == raw_token) {
@@ -84,6 +90,15 @@ impl VirtualMachine {
         if let Some(Control(Mode::Def)) = self.ctrl.last() {
             return self.index + 1;
         }
+        if let Some(Control(Mode::Quote)) = self.ctrl.last() {
+            if let Word(word) = token {
+                self.ctrl.pop();
+                let jump = self.dict[word].jump;
+                self.stack.push(Jump(jump));
+                return self.index + 1;
+            }
+            panic!("expected a word");
+        }
         if let Some(Control(Mode::Compile)) = self.ctrl.last() {
             if token == Native(Nat::OpenBrace) {
                 self.ctrl.push(Control(Mode::Compile));
@@ -106,6 +121,7 @@ impl VirtualMachine {
                 return self.dict[i].jump
             }
             Bool(x) => self.stack.push(Bool(x)),
+            Empty => {},
             tok => self.stack.push(tok)
         }
         return self.index + 1;
@@ -187,8 +203,9 @@ impl VirtualMachine {
                 let offset = self.stack.len() - self.stack.pop_num() as usize;
                 if let Some(token) = self.stack.get(offset) {
                     self.stack.push(token.clone());
+                } else {
+                    panic!("stack is empty");
                 }
-                panic!("stack is empty");
             }
             Over => {
                 let a = self.stack.popp();
@@ -203,7 +220,7 @@ impl VirtualMachine {
                 self.stack.push(a.clone());
             }
             Include => todo!("Include"),
-            Debug => todo!("Debug"),
+            Debug => {}
             Def => {
                 self.ctrl.push(Control(Mode::Def));
             }
@@ -229,26 +246,28 @@ impl VirtualMachine {
                     } else { panic!("; requires a symbol") }
                 } else { panic!("; requires a symbol") }
             }
-            StoreCtrl => {
-                let value = self.stack.popp();
-                self.ctrl.push(value)
-            },
-            ReadCtrl => {
-                if let Some(value) = self.ctrl.pop() {
-                    self.stack.push(value)
-                }
-            },
+            StoreCtrl => self.ctrl.push(self.stack.popp()),
+            ReadCtrl => self.stack.push(self.ctrl.popp()),
             CopyCtrl => {
-                if let Some(value) = self.ctrl.last() {
-                    self.stack.push(value.clone())
-                }
+                let val = self.ctrl.popp();
+                self.ctrl.push(val.clone());
+                self.stack.push(val.clone());
             },
-            Invoke => todo!("Invoke"),
+            Invoke => {
+                let jump = self.stack.pop_jump();
+                self.ctrl.push(Jump(self.index + 1));
+                return jump;
+            }
             ByteArray => todo!("ByteArray"),
             Set => todo!("Set"),
             Get => todo!("Get"),
             DisplayImage => todo!("DisplayImage"),
-            Questionmark => todo!("Questionmark"),
+            Questionmark => {
+                let false_val = self.stack.popp();
+                let true_val = self.stack.popp();
+                let cond = self.stack.pop_bool();
+                self.stack.push(if cond { true_val } else { false_val });
+            }
             If => {
                 let no = self.stack.pop_jump();
                 let yes = self.stack.pop_jump();
@@ -289,13 +308,29 @@ impl VirtualMachine {
                     panic!("expected a number");
                 }
             }
-            OpenParen => todo!("OpenParen"),
+            OpenParen => { self.ctrl.push(Control(Mode::Comment)) }
+            CloseParen => todo!("CloseParen"),
             Comment => todo!("Comment"),
             Dot => println!("{}", self.stack.popp().to_string()),
-            Equal => todo!("Equal"),
-            GreaterThan => todo!("GreaterThan"),
-            LessThan => todo!("LessThan"),
-            Not => todo!("Not"),
+            Equal => {
+                let right = self.stack.pop_num();
+                let left = self.stack.pop_num();
+                self.stack.push(Bool(left == right));
+            }
+            GreaterThan => {
+                let right = self.stack.pop_num();
+                let left = self.stack.pop_num();
+                self.stack.push(Bool(left > right));
+            }
+            LessThan => {
+                let right = self.stack.pop_num();
+                let left = self.stack.pop_num();
+                self.stack.push(Bool(left < right));
+            }
+            Not => {
+                let cond = self.stack.pop_bool();
+                self.stack.push(Bool(!cond));
+            }
             True => self.stack.push(Bool(true)),
             False => self.stack.push(Bool(false)),
             Assign => todo!("Assign"),

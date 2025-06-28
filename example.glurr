@@ -1,6 +1,8 @@
 def foo { 7 } ;
 def mult { * } ;
 1 { dup 2 * } 0 6 range enumerate ...
+' foo ...
+invoke
 true
 foo dup +
 2.3 foo mult
