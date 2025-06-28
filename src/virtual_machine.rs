@@ -124,7 +124,7 @@ impl VirtualMachine {
                 self.stack.push(Token::Number(lhs - rhs));
             }
             Multiply => {
-                let prod = self.stack.pop_num() + self.stack.pop_num();
+                let prod = self.stack.pop_num() * self.stack.pop_num();
                 self.stack.push(Token::Number(prod));
             }
             Divide => {
@@ -163,14 +163,10 @@ impl VirtualMachine {
                 self.stack.push(Token::Number(-value));
             }
             Dots => {
-                for item in self.stack.clone() {
-                    println!("{}", item.to_string());
-                }
+                self.stack.print();
             }
             CtrlDots => {
-                for item in self.ctrl.clone() {
-                    println!("{}", item.to_string());
-                }
+                self.ctrl.print();
             }
             Drop => { self.stack.pop(); }
             Swap => {
@@ -204,7 +200,7 @@ impl VirtualMachine {
             Dup => {
                 let a = self.stack.popp();
                 self.stack.push(a);
-                self.stack.push(a);
+                self.stack.push(a.clone());
             }
             Include => todo!("Include"),
             Debug => todo!("Debug"),
@@ -295,7 +291,7 @@ impl VirtualMachine {
             }
             OpenParen => todo!("OpenParen"),
             Comment => todo!("Comment"),
-            Dot => todo!("Dot"),
+            Dot => println!("{}", self.stack.popp().to_string()),
             Equal => todo!("Equal"),
             GreaterThan => todo!("GreaterThan"),
             LessThan => todo!("LessThan"),

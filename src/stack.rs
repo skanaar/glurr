@@ -6,6 +6,7 @@ pub trait Stack<T> {
     fn pop_num(&mut self) -> f64;
     fn pop_jump(&mut self) -> usize;
     fn pop_bool(&mut self) -> bool;
+    fn print(&self);
 }
 
 impl Stack<Token> for Vec<Token> {
@@ -27,5 +28,10 @@ impl Stack<Token> for Vec<Token> {
     fn pop_bool(&mut self) -> bool {
         if let Some(Token::Bool(value)) = self.pop() { return value }
         panic!("expected a bool");
+    }
+
+    fn print(&self) {
+        let strings: Vec<String> = self.iter().map(|x| x.to_string()).collect();
+        println!("<{}> {}", self.len(), strings.join(" "));
     }
 }
