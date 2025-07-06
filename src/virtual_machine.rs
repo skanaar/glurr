@@ -21,6 +21,7 @@ pub struct VirtualMachine {
     syms: Vec<String>,
     strs: Vec<String>,
     dict: Vec<DictEntry>,
+    vars: Vec<Token>,
 }
 
 impl VirtualMachine {
@@ -34,6 +35,7 @@ impl VirtualMachine {
             syms: Vec::new(),
             strs: Vec::new(),
             dict: Vec::new(),
+            vars: Vec::new(),
         }
     }
 
@@ -43,11 +45,13 @@ impl VirtualMachine {
             .map(|s| s)
             .collect();
         self.index = 0;
-        while self.index < raw_tokens.len() {
+        let mut source_index = 0;
+        while source_index < raw_tokens.len() {
             let token = if self.index < self.tokens.len() {
                 self.tokens[self.index]
             } else {
-                let token = self.parse(raw_tokens[self.index]);
+                let token = self.parse(raw_tokens[source_index]);
+                source_index += 1;
                 self.tokens.push(token);
                 token
             };
@@ -69,6 +73,21 @@ impl VirtualMachine {
             }
             self.syms.push(raw_token.to_string());
             return Symbol(self.syms.len() - 1);
+        }
+        if let Some(Control(Mode::Var)) = self.ctrl.last() {
+            self.ctrl.pop();
+            if self.syms.iter().any(|e| *e == raw_token) {
+                panic!("Symbol {} already defined", raw_token);
+            }
+            self.vars.push(Number(0.));
+            self.syms.push(raw_token.to_string());
+            self.tokens.push(Empty);
+            self.tokens.push(Symbol(self.syms.len() - 1));
+            self.tokens.push(Native(Nat::OpenBrace));
+            self.tokens.push(Var(self.vars.len() - 1));
+            self.tokens.push(Native(Nat::CloseBrace));
+            self.tokens.push(Native(Nat::Semicolon));
+            return Empty;
         }
         if let Some(native) = self.natives.get(raw_token) {
             return Native(*native)
@@ -111,6 +130,7 @@ impl VirtualMachine {
         match token {
             Native(nat) => return self.evaluate_native(nat),
             Number(x) => self.stack.push(Number(x)),
+            Var(x) => self.stack.push(Var(x)),
             Control(_) => panic!("cannot evaluate a control token"),
             Jump(index) => {
                 self.ctrl.push(Jump(self.index + 1));
@@ -122,7 +142,8 @@ impl VirtualMachine {
             }
             Bool(x) => self.stack.push(Bool(x)),
             Empty => {},
-            tok => self.stack.push(tok)
+            Symbol(index) => self.stack.push(Symbol(index)),
+            Str(_) => panic!("strings not supported"),
         }
         return self.index + 1;
     }
@@ -223,6 +244,9 @@ impl VirtualMachine {
             Debug => {}
             Def => {
                 self.ctrl.push(Control(Mode::Def));
+            }
+            Var => {
+                self.ctrl.push(Control(Mode::Var));
             }
             Quote => self.ctrl.push(Control(Mode::Quote)),
             OpenBrace => {
@@ -334,8 +358,19 @@ impl VirtualMachine {
             True => self.stack.push(Bool(true)),
             False => self.stack.push(Bool(false)),
             Assign => todo!("Assign"),
-            Read => todo!("Read"),
-            Write => todo!("Write"),
+            Read => {
+                let index = self.stack.pop_var();
+                if let Number(value) = self.vars[index] {
+                    self.stack.push(Number(value));
+                } else {
+                    panic!("vars can only be bound to numbers")
+                }
+            },
+            Write => {
+                let index = self.stack.pop_var();
+                let value = self.stack.pop_num();
+                self.vars[index] = Number(value);
+            },
         }
         return self.index + 1;
     }

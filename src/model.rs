@@ -1,10 +1,55 @@
 use std::{collections::HashMap};
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum Mode { Compile, Def, Var, Quote, Comment }
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum Token {
+    Native(Nat),
+    Control(Mode),
+    Jump(usize),
+    Number(f64),
+    Bool(bool),
+    Str(usize),
+    Word(usize),
+    Symbol(usize),
+    Var(usize),
+    Empty,
+}
+impl Token {
+    pub(crate) fn to_string(&self) -> String {
+        match self {
+            Token::Native(native) => {
+                let nats = create_natives();
+                if let Some(pair) = nats.iter().find(|e| e.1 == native) {
+                    let name = pair.0;
+                    return format!("Native({})", name);
+                }
+                panic!("unknown native");
+            },
+            Token::Control(Mode::Compile) => "Compile".to_string(),
+            Token::Control(Mode::Def) => "Def".to_string(),
+            Token::Control(Mode::Var) => "Var".to_string(),
+            Token::Control(Mode::Quote) => "Quote".to_string(),
+            Token::Control(Mode::Comment) => "Comment".to_string(),
+            Token::Jump(index) => format!("Jump({})", index),
+            Token::Number(value) => value.to_string(),
+            Token::Bool(value) => value.to_string(),
+            Token::Str(value) => format!("String({})", value),
+            Token::Word(index) => format!("Word({})", index),
+            Token::Var(index) => format!("Var({})", index),
+            Token::Symbol(index) => format!("Symbol({})", index),
+            Token::Empty => "Empty".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Nat {
     Include = 0,
     Debug,
     Def,
+    Var,
     Quote,
     OpenBrace,
     CloseBrace,
@@ -58,45 +103,12 @@ pub enum Nat {
     Write,
 }
 
-#[derive(Clone, Copy, PartialEq)]
-pub enum Mode { Compile, Def, Quote, Comment }
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum Token {
-    Native(Nat),
-    Control(Mode),
-    Jump(usize),
-    Number(f64),
-    Bool(bool),
-    Str(usize),
-    Word(usize),
-    Symbol(usize),
-    Empty,
-}
-impl Token {
-    pub(crate) fn to_string(&self) -> String {
-        match self {
-            Token::Native(_) => format!("Native()"),
-            Token::Control(Mode::Compile) => "Compile".to_string(),
-            Token::Control(Mode::Def) => "Def".to_string(),
-            Token::Control(Mode::Quote) => "Quote".to_string(),
-            Token::Control(Mode::Comment) => "Comment".to_string(),
-            Token::Jump(index) => format!("Jump({})", index),
-            Token::Number(value) => value.to_string(),
-            Token::Bool(value) => value.to_string(),
-            Token::Str(value) => format!("String({})", value),
-            Token::Word(index) => format!("Word({})", index),
-            Token::Symbol(index) => format!("Symbol({})", index),
-            Token::Empty => "Empty".to_string(),
-        }
-    }
-}
-
 pub fn create_natives() -> HashMap<&'static str, Nat> {
     return HashMap::from([
         ("include", Nat::Include),
         ("debug", Nat::Debug),
         ("def", Nat::Def),
+        ("var", Nat::Var),
         ("'", Nat::Quote),
         ("{", Nat::OpenBrace),
         ("}", Nat::CloseBrace),

@@ -5,6 +5,7 @@ pub trait Stack<T> {
     fn popp(&mut self) -> Token;
     fn pop_num(&mut self) -> f64;
     fn pop_jump(&mut self) -> usize;
+    fn pop_var(&mut self) -> usize;
     fn pop_bool(&mut self) -> bool;
     fn print(&self);
 }
@@ -28,6 +29,11 @@ impl Stack<Token> for Vec<Token> {
     fn pop_jump(&mut self) -> usize {
         if let Some(Token::Jump(value)) = self.pop() { return value }
         panic!("expected a jump");
+    }
+
+    fn pop_var(&mut self) -> usize {
+        if let Some(Token::Var(value)) = self.pop() { return value }
+        panic!("expected a variable");
     }
 
     fn print(&self) {
