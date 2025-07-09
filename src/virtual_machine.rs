@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use image::ImageBuffer;
 
 use crate::stack;
 use stack::Stack;
@@ -22,6 +23,7 @@ pub struct VirtualMachine {
     strs: Vec<String>,
     dict: Vec<DictEntry>,
     vars: Vec<Token>,
+    arrays: Vec<Vec<u8>>,
 }
 
 impl VirtualMachine {
@@ -36,6 +38,7 @@ impl VirtualMachine {
             strs: Vec::new(),
             dict: Vec::new(),
             vars: Vec::new(),
+            arrays: Vec::new(),
         }
     }
 
@@ -131,6 +134,7 @@ impl VirtualMachine {
             Native(nat) => return self.evaluate_native(nat),
             Number(x) => self.stack.push(Number(x)),
             Var(x) => self.stack.push(Var(x)),
+            Array(x) => self.stack.push(Array(x)),
             Control(_) => panic!("cannot evaluate a control token"),
             Jump(index) => {
                 self.ctrl.push(Jump(self.index + 1));
@@ -282,10 +286,38 @@ impl VirtualMachine {
                 self.ctrl.push(Jump(self.index + 1));
                 return jump;
             }
-            ByteArray => todo!("ByteArray"),
-            Set => todo!("Set"),
-            Get => todo!("Get"),
-            DisplayImage => todo!("DisplayImage"),
+            ByteArray => {
+                let len = self.stack.pop_num() as usize;
+                let mut array: Vec<u8> = Vec::with_capacity(len);
+                for _ in 0..len { array.push(0) }
+                self.arrays.push(array);
+                self.stack.push(Array(self.arrays.len() - 1))
+            }
+            Set => {
+                let array_ref = self.stack.pop_array() as usize;
+                let index = self.stack.pop_num() as usize;
+                let value = self.stack.pop_num() as u8;
+                let array = &mut self.arrays[array_ref];
+                array[index] = value;
+            }
+            Get => {
+                let array_ref = self.stack.pop_array() as usize;
+                let index = self.stack.pop_num() as usize;
+                let array = &mut self.arrays[array_ref];
+                self.stack.push(Number(array[index] as f64));
+            }
+            DisplayImage => {
+                let width = self.stack.pop_num() as u32;
+                let array_ref = self.stack.pop_array();
+                let array = &mut self.arrays[array_ref];
+                let height = array.len() as u32 / (width * 4);
+                let img = ImageBuffer::from_fn(width, height, |x, y| {
+                    let i = 4 * (x + width * y) as usize;
+                    image::Rgb([array[i+0], array[i+1], array[i+2]])
+                });
+                let res = img.save("./output.png");
+                res.expect("failed to write image")
+            }
             Questionmark => {
                 let false_val = self.stack.popp();
                 let true_val = self.stack.popp();
@@ -333,7 +365,7 @@ impl VirtualMachine {
                 }
             }
             OpenParen => { self.ctrl.push(Control(Mode::Comment)) }
-            CloseParen => todo!("CloseParen"),
+            CloseParen => panic!("unexpected CloseParen"),
             Comment => todo!("Comment"),
             Dot => println!("{}", self.stack.popp().to_string()),
             Equal => {
@@ -360,16 +392,13 @@ impl VirtualMachine {
             Assign => todo!("Assign"),
             Read => {
                 let index = self.stack.pop_var();
-                if let Number(value) = self.vars[index] {
-                    self.stack.push(Number(value));
-                } else {
-                    panic!("vars can only be bound to numbers")
-                }
+                let token = self.vars[index];
+                self.stack.push(token);
             },
             Write => {
                 let index = self.stack.pop_var();
-                let value = self.stack.pop_num();
-                self.vars[index] = Number(value);
+                let token = self.stack.popp();
+                self.vars[index] = token;
             },
         }
         return self.index + 1;

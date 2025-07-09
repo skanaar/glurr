@@ -1,7 +1,26 @@
-var x
-12 x !
-x @ .
+def sq { dup * } ;
 
+def w { 64 } ;
+var x
+var y
+var value
+
+def -rot { rot rot } ;
+def clamp-byte { dup 255 < swap 255 ? } ;
+
+var img
+w w * 4 * byte-array img !
+{
+  i w mod x !
+  i w / floor y !
+  x @ w 2 / - sq y @ w 2 / - sq + 4 / clamp-byte value !
+  value @ i 4 * 0 + img @ set
+  value @ i 4 * 1 + img @ set
+  value @ i 4 * 2 + img @ set
+  255 i 4 * 3 + img @ set
+} 0 w sq range enumerate
+
+img @ 64 display-image
 
 def foo { 7 } ;
 def mult { * } ;

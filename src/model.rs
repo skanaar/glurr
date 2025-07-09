@@ -14,6 +14,7 @@ pub enum Token {
     Word(usize),
     Symbol(usize),
     Var(usize),
+    Array(usize),
     Empty,
 }
 impl Token {
@@ -38,6 +39,7 @@ impl Token {
             Token::Str(value) => format!("String({})", value),
             Token::Word(index) => format!("Word({})", index),
             Token::Var(index) => format!("Var({})", index),
+            Token::Array(index) => format!("Array({})", index),
             Token::Symbol(index) => format!("Symbol({})", index),
             Token::Empty => "Empty".to_string(),
         }
