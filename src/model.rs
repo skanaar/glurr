@@ -103,6 +103,7 @@ pub enum Nat {
     Assign,
     Read,
     Write,
+    Assert,
 }
 
 pub fn create_natives() -> HashMap<&'static str, Nat> {
@@ -162,5 +163,6 @@ pub fn create_natives() -> HashMap<&'static str, Nat> {
         ("=:", Nat::Assign),
         ("@", Nat::Read),
         ("!", Nat::Write),
+        ("assert", Nat::Assert),
     ])
 }

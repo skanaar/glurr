@@ -1,33 +1,60 @@
+
+def -rot ( a b c - c a b ) { rot rot } ;
+def 2dup ( a b - a b a b ) { swap dup rot dup rot swap } ;
+def 2over { 4 pick 4 pick } ;
+def over ( a b - a b a ) { swap dup rot swap } ;
+def if-else { >§ over >§ if §> not §> if } ;
+def +1! { dup @ 1 + swap ! } ;
 def sq { dup * } ;
 
-def w { 64 } ;
-var x
-var y
-var value
+def complex-mult ( a b c d - x y ) {
+  4 pick 3 pick *
+  4 pick 3 pick * neg
+  + >§
+  -rot *
+  -rot *
+  + §> swap
+} ;
 
-def -rot { rot rot } ;
-def clamp-byte { dup 255 < swap 255 ? } ;
+def complex-sq ( 2n 2n - 2n ) { 2dup complex-mult } ;
+def complex-add ( a b c d - x y ) { rot + rot rot + swap } ;
+def complex-neg ( a b - x y ) { neg swap neg swap } ;
+
+def mandelbrot-iter { complex-sq 2over complex-add } ;
+def sq-mag ( n n - n ) { dup * swap dup * + } ;
+def escaping { 2dup sq-mag 4 > } ;
+def 4drop { drop drop drop drop } ;
+
+def x0 { -1.75 } ;
+def y0 { -1.25 } ;
+def scale { 2.5 } ;
+def res { 256 } ;
+def maxiter { 100 } ;
+def x { res mod } ;
+def y { res / floor } ;
+def real { res / scale * x0 + } ;
+def imag { res / scale * y0 + } ;
+def to255 { maxiter / 255 * } ;
+def rgba { floor dup dup 255 } ;
+def to-coord { dup x real swap y imag } ;
+
+var iter-count
+def mandelbrot-iterate ( c z - c z ) {
+  {
+    i iter-count ! mandelbrot-iter escaping leave-if
+  } 0 maxiter range enumerate
+} ;
+def mandelbrot-at { 0 0 mandelbrot-iterate 4drop iter-count @ } ;
+def mandelbrot-pixel { to-coord mandelbrot-at to255 rgba } ;
+
+def set-pixel ( r g b a ref i - ) {
+  2dup >§ >§ 4 * 3 + swap set
+  §> §> 2dup >§ >§ 4 * 2 + swap set
+  §> §> 2dup >§ >§ 4 * 1 + swap set
+  §> §> 4 * swap set
+} ;
 
 var img
-w w * 4 * byte-array img !
-{
-  i w mod x !
-  i w / floor y !
-  x @ w 2 / - sq y @ w 2 / - sq + 4 / clamp-byte value !
-  value @ i 4 * 0 + img @ set
-  value @ i 4 * 1 + img @ set
-  value @ i 4 * 2 + img @ set
-  255 i 4 * 3 + img @ set
-} 0 w sq range enumerate
-
-img @ 64 display-image
-
-def foo { 7 } ;
-def mult { * } ;
-1 { dup 2 * } 0 6 range enumerate ...
-' foo ...
-invoke
-true
-foo dup +
-2.3 foo mult
-3 10 / ...
+res res * 4 * byte-array img !
+{ i mandelbrot-pixel img @ i set-pixel } 0 res sq range enumerate
+img @ res display-image

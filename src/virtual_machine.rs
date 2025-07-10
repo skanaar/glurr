@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use image::ImageBuffer;
+use std::time::Instant;
 
 use crate::stack;
 use stack::Stack;
@@ -43,9 +44,10 @@ impl VirtualMachine {
     }
 
     pub fn interpret(&mut self, source: String) {
+        let start = Instant::now();
         let raw_tokens: Vec<&str> = source
             .split(char::is_whitespace)
-            .map(|s| s)
+            .filter(|s| !s.is_empty())
             .collect();
         self.index = 0;
         let mut source_index = 0;
@@ -60,6 +62,7 @@ impl VirtualMachine {
             };
             self.index = self.evaluate(token);
         }
+        println!("elapsed: {}s", start.elapsed().as_millis());
     }
 
     pub fn parse(&mut self, raw_token: &str) -> Token {
@@ -95,9 +98,6 @@ impl VirtualMachine {
         if let Some(native) = self.natives.get(raw_token) {
             return Native(*native)
         }
-        if let Some(i) = self.dict.iter().position(|w| w.word == raw_token) {
-            return Word(i)
-        }
         if let Some(number) = raw_token.parse::<f64>().ok() {
             return Number(number);
         }
@@ -105,7 +105,10 @@ impl VirtualMachine {
             self.strs.push(raw_token.to_string());
             return Str(self.strs.len());
         }
-        return Empty
+        if let Some(i) = self.dict.iter().position(|w| w.word == raw_token) {
+            return Word(i)
+        }
+        panic!("unknown word '{}'", raw_token)
     }
 
     pub fn evaluate(&mut self, token: Token) -> usize {
@@ -225,8 +228,9 @@ impl VirtualMachine {
                 self.stack.push(c);
             }
             Pick => {
-                let offset = self.stack.len() - self.stack.pop_num() as usize;
-                if let Some(token) = self.stack.get(offset) {
+                let offset = self.stack.pop_num();
+                let index = self.stack.len() - offset as usize;
+                if let Some(token) = self.stack.get(index) {
                     self.stack.push(token.clone());
                 } else {
                     panic!("stack is empty");
@@ -399,6 +403,10 @@ impl VirtualMachine {
                 let index = self.stack.pop_var();
                 let token = self.stack.popp();
                 self.vars[index] = token;
+            },
+            Assert => {
+                let cond = self.stack.pop_bool();
+                if !cond { panic!("assertion failed") }
             },
         }
         return self.index + 1;
