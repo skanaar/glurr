@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::time::Instant;
 
 mod virtual_machine;
 mod model;
@@ -15,5 +16,7 @@ fn main() {
         .expect("Should have been able to read the file");
 
     let mut vm = VirtualMachine::new();
+    let start = Instant::now();
     vm.interpret(contents);
+    println!("elapsed: {}ms", start.elapsed().as_millis());
 }

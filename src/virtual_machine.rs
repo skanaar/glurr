@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use image::ImageBuffer;
-use std::time::Instant;
 
 use crate::stack;
 use stack::Stack;
@@ -24,7 +23,7 @@ pub struct VirtualMachine {
     strs: Vec<String>,
     dict: Vec<DictEntry>,
     vars: Vec<Token>,
-    arrays: Vec<Vec<u8>>,
+    arrays: Vec<Vec<f64>>,
 }
 
 impl VirtualMachine {
@@ -44,7 +43,6 @@ impl VirtualMachine {
     }
 
     pub fn interpret(&mut self, source: String) {
-        let start = Instant::now();
         let raw_tokens: Vec<&str> = source
             .split(char::is_whitespace)
             .filter(|s| !s.is_empty())
@@ -62,7 +60,6 @@ impl VirtualMachine {
             };
             self.index = self.evaluate(token);
         }
-        println!("elapsed: {}s", start.elapsed().as_millis());
     }
 
     pub fn parse(&mut self, raw_token: &str) -> Token {
@@ -276,7 +273,7 @@ impl VirtualMachine {
                             jump: jump
                         })
                     } else { panic!("; requires a symbol") }
-                } else { panic!("; requires a symbol") }
+                } else { panic!("; requires a jump") }
             }
             StoreCtrl => self.ctrl.push(self.stack.popp()),
             ReadCtrl => self.stack.push(self.ctrl.popp()),
@@ -290,17 +287,17 @@ impl VirtualMachine {
                 self.ctrl.push(Jump(self.index + 1));
                 return jump;
             }
-            ByteArray => {
+            Allot => {
                 let len = self.stack.pop_num() as usize;
-                let mut array: Vec<u8> = Vec::with_capacity(len);
-                for _ in 0..len { array.push(0) }
+                let mut array: Vec<f64> = Vec::with_capacity(len);
+                for _ in 0..len { array.push(0.) }
                 self.arrays.push(array);
                 self.stack.push(Array(self.arrays.len() - 1))
             }
             Set => {
                 let array_ref = self.stack.pop_array() as usize;
                 let index = self.stack.pop_num() as usize;
-                let value = self.stack.pop_num() as u8;
+                let value = self.stack.pop_num() as f64;
                 let array = &mut self.arrays[array_ref];
                 array[index] = value;
             }
@@ -317,7 +314,11 @@ impl VirtualMachine {
                 let height = array.len() as u32 / (width * 4);
                 let img = ImageBuffer::from_fn(width, height, |x, y| {
                     let i = 4 * (x + width * y) as usize;
-                    image::Rgb([array[i+0], array[i+1], array[i+2]])
+                    image::Rgb([
+                        array[i+0] as u8,
+                        array[i+1] as u8,
+                        array[i+2] as u8
+                    ])
                 });
                 let res = img.save("./output.png");
                 res.expect("failed to write image")

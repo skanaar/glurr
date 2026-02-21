@@ -1,4 +1,3 @@
-
 def -rot ( a b c - c a b ) { rot rot } ;
 def 2dup ( a b - a b a b ) { swap dup rot dup rot swap } ;
 def 2over { 4 pick 4 pick } ;
@@ -16,6 +15,9 @@ def complex-mult ( a b c d - x y ) {
   + §> swap
 } ;
 
+( def var { consume symbol emit ' { emit 1 allot emit ' } emit ' ; emit } ; )
+( var foo )
+
 def complex-sq ( 2n 2n - 2n ) { 2dup complex-mult } ;
 def complex-add ( a b c d - x y ) { rot + rot rot + swap } ;
 def complex-neg ( a b - x y ) { neg swap neg swap } ;
@@ -29,14 +31,16 @@ def x0 { -1.75 } ;
 def y0 { -1.25 } ;
 def scale { 2.5 } ;
 def res { 256 } ;
-def maxiter { 100 } ;
+def maxiter { 50 } ;
 def x { res mod } ;
 def y { res / floor } ;
 def real { res / scale * x0 + } ;
 def imag { res / scale * y0 + } ;
-def to255 { maxiter / 255 * } ;
-def rgba { floor dup dup 255 } ;
-def to-coord { dup x real swap y imag } ;
+def normalize { maxiter / } ;
+def max { 2dup > -rot ? } ;
+def min { 2dup < -rot ? } ;
+def rgba { floor dup 2 * 255 min dup 255 } ;
+def to-coord ( i - c z ) { dup x real swap y imag } ;
 
 var iter-count
 def mandelbrot-iterate ( c z - c z ) {
@@ -44,8 +48,9 @@ def mandelbrot-iterate ( c z - c z ) {
     i iter-count ! mandelbrot-iter escaping leave-if
   } 0 maxiter range enumerate
 } ;
+
 def mandelbrot-at { 0 0 mandelbrot-iterate 4drop iter-count @ } ;
-def mandelbrot-pixel { to-coord mandelbrot-at to255 rgba } ;
+def mandelbrot-pixel { to-coord mandelbrot-at normalize 255 * rgba } ;
 
 def set-pixel ( r g b a ref i - ) {
   2dup >§ >§ 4 * 3 + swap set
@@ -55,6 +60,6 @@ def set-pixel ( r g b a ref i - ) {
 } ;
 
 var img
-res res * 4 * byte-array img !
+res res * 4 * allot img !
 { i mandelbrot-pixel img @ i set-pixel } 0 res sq range enumerate
 img @ res display-image
