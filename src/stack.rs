@@ -2,7 +2,7 @@ use crate::model;
 use model::Token;
 
 pub trait Stack<T> {
-    fn popp(&mut self) -> Token;
+    fn pop_token(&mut self) -> Token;
     fn pop_num(&mut self) -> f64;
     fn pop_jump(&mut self) -> usize;
     fn pop_var(&mut self) -> usize;
@@ -12,7 +12,7 @@ pub trait Stack<T> {
 }
 
 impl Stack<Token> for Vec<Token> {
-    fn popp(&mut self) -> Token {
+    fn pop_token(&mut self) -> Token {
         if let Some(token) = self.pop() { return token }
         panic!("stack is empty");
     }

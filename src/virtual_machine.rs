@@ -211,15 +211,15 @@ impl VirtualMachine {
             }
             Drop => { self.stack.pop(); }
             Swap => {
-                let a = self.stack.popp();
-                let b = self.stack.popp();
+                let a = self.stack.pop_token();
+                let b = self.stack.pop_token();
                 self.stack.push(a);
                 self.stack.push(b);
             }
             Rot => {
-                let a = self.stack.popp();
-                let b = self.stack.popp();
-                let c = self.stack.popp();
+                let a = self.stack.pop_token();
+                let b = self.stack.pop_token();
+                let c = self.stack.pop_token();
                 self.stack.push(b);
                 self.stack.push(a);
                 self.stack.push(c);
@@ -234,16 +234,16 @@ impl VirtualMachine {
                 }
             }
             Over => {
-                let a = self.stack.popp();
-                let b = self.stack.popp();
+                let a = self.stack.pop_token();
+                let b = self.stack.pop_token();
                 self.stack.push(b);
                 self.stack.push(a);
                 self.stack.push(b);
             }
             Dup => {
-                let a = self.stack.popp();
+                let a = self.stack.pop_token();
                 self.stack.push(a);
-                self.stack.push(a.clone());
+                self.stack.push(a);
             }
             Include => todo!("Include"),
             Debug => {}
@@ -275,10 +275,10 @@ impl VirtualMachine {
                     } else { panic!("; requires a symbol") }
                 } else { panic!("; requires a jump") }
             }
-            StoreCtrl => self.ctrl.push(self.stack.popp()),
-            ReadCtrl => self.stack.push(self.ctrl.popp()),
+            StoreCtrl => self.ctrl.push(self.stack.pop_token()),
+            ReadCtrl => self.stack.push(self.ctrl.pop_token()),
             CopyCtrl => {
-                let val = self.ctrl.popp();
+                let val = self.ctrl.pop_token();
                 self.ctrl.push(val.clone());
                 self.stack.push(val.clone());
             },
@@ -324,8 +324,8 @@ impl VirtualMachine {
                 res.expect("failed to write image")
             }
             Questionmark => {
-                let false_val = self.stack.popp();
-                let true_val = self.stack.popp();
+                let false_val = self.stack.pop_token();
+                let true_val = self.stack.pop_token();
                 let cond = self.stack.pop_bool();
                 self.stack.push(if cond { true_val } else { false_val });
             }
@@ -372,7 +372,7 @@ impl VirtualMachine {
             OpenParen => { self.ctrl.push(Control(Mode::Comment)) }
             CloseParen => panic!("unexpected CloseParen"),
             Comment => todo!("Comment"),
-            Dot => println!("{}", self.stack.popp().to_string()),
+            Dot => println!("{}", self.stack.pop_token().to_string()),
             Equal => {
                 let right = self.stack.pop_num();
                 let left = self.stack.pop_num();
@@ -402,7 +402,7 @@ impl VirtualMachine {
             },
             Write => {
                 let index = self.stack.pop_var();
-                let token = self.stack.popp();
+                let token = self.stack.pop_token();
                 self.vars[index] = token;
             },
             Assert => {
