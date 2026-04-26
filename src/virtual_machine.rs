@@ -254,6 +254,7 @@ impl VirtualMachine {
                 self.ctrl.push(Control(Mode::Var));
             }
             Quote => self.ctrl.push(Control(Mode::Quote)),
+            Emit => self.tokens.push(self.stack.pop_token()),
             OpenBrace => {
                 self.ctrl.push(Control(Mode::Compile));
                 self.stack.push(Jump(self.index + 1));
@@ -394,7 +395,6 @@ impl VirtualMachine {
             }
             True => self.stack.push(Bool(true)),
             False => self.stack.push(Bool(false)),
-            Assign => todo!("Assign"),
             Read => {
                 let index = self.stack.pop_var();
                 let token = self.vars[index];
