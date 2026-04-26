@@ -15,8 +15,9 @@ def complex-mult ( a b c d - x y ) {
   + §> swap
 } ;
 
+( 10 0 {  } loop )
 ( def var { consume symbol emit ' { emit 1 allot emit ' } emit ' ; emit } ; )
-( var foo )
+( var foo - { 7 } ;  )
 
 def complex-sq ( 2n 2n - 2n ) { 2dup complex-mult } ;
 def complex-add ( a b c d - x y ) { rot + rot rot + swap } ;
@@ -30,8 +31,8 @@ def 4drop { drop drop drop drop } ;
 def x0 { -1.75 } ;
 def y0 { -1.25 } ;
 def scale { 2.5 } ;
-def res { 256 } ;
-def maxiter { 50 } ;
+def res { 128 } ;
+def maxiter { 30 } ;
 def x { res mod } ;
 def y { res / floor } ;
 def real { res / scale * x0 + } ;
@@ -39,6 +40,9 @@ def imag { res / scale * y0 + } ;
 def normalize { maxiter / } ;
 def max { 2dup > -rot ? } ;
 def min { 2dup < -rot ? } ;
+def >= { < not } ;
+def <= { > not } ;
+def sawtooth { dup 0.9 >= 0 rot ? } ;
 def rgba { floor dup 2 * 255 min dup 255 } ;
 def to-coord ( i - c z ) { dup x real swap y imag } ;
 
@@ -50,7 +54,7 @@ def mandelbrot-iterate ( c z - c z ) {
 } ;
 
 def mandelbrot-at { 0 0 mandelbrot-iterate 4drop iter-count @ } ;
-def mandelbrot-pixel { to-coord mandelbrot-at normalize 255 * rgba } ;
+def mandelbrot-pixel { to-coord mandelbrot-at normalize sawtooth 255 * rgba } ;
 
 def set-pixel ( r g b a ref i - ) {
   2dup >§ >§ 4 * 3 + swap set
@@ -59,7 +63,11 @@ def set-pixel ( r g b a ref i - ) {
   §> §> 4 * swap set
 } ;
 
+def range_w { range } ;
+def enumerate_w { enumerate } ;
+def for { ' range_w emit ' enumerate_w emit } ;
+
 var img
 res res * 4 * allot img !
-{ i mandelbrot-pixel img @ i set-pixel } 0 res sq range enumerate
+{ i mandelbrot-pixel img @ i set-pixel } 0 res sq for
 img @ res display-image

@@ -19,6 +19,7 @@ pub struct VirtualMachine {
     tokens: Vec<Token>,
     stack: Vec<Token>,
     ctrl: Vec<Token>,
+    loops: Vec<Token>,
     syms: Vec<String>,
     strs: Vec<String>,
     dict: Vec<DictEntry>,
@@ -34,6 +35,7 @@ impl VirtualMachine {
             tokens: Vec::new(),
             stack: Vec::new(),
             ctrl: Vec::new(),
+            loops: Vec::new(),
             syms: Vec::new(),
             strs: Vec::new(),
             dict: Vec::new(),
@@ -338,18 +340,18 @@ impl VirtualMachine {
             },
             Loop => todo!("Loop"),
             Range => {
-                self.ctrl.push(Number(self.stack.pop_num()));
-                self.ctrl.push(Number(self.stack.pop_num()));
-                self.ctrl.push(Jump(self.stack.pop_jump()));
+                self.loops.push(Number(self.stack.pop_num()));
+                self.loops.push(Number(self.stack.pop_num()));
+                self.loops.push(Jump(self.stack.pop_jump()));
             }
             Enumerate => {
-                let jump = self.ctrl.pop_jump();
-                let from = self.ctrl.pop_num();
-                let to = self.ctrl.pop_num();
+                let jump = self.loops.pop_jump();
+                let from = self.loops.pop_num();
+                let to = self.loops.pop_num();
                 if from < to {
-                    self.ctrl.push(Number(to));
-                    self.ctrl.push(Number(from + 1.));
-                    self.ctrl.push(Jump(jump));
+                    self.loops.push(Number(to));
+                    self.loops.push(Number(from + 1.));
+                    self.loops.push(Jump(jump));
                     self.ctrl.push(Jump(self.index));
                     return jump
                 }
@@ -357,14 +359,14 @@ impl VirtualMachine {
             LeaveIf => {
                 if self.stack.pop_bool() {
                     let jump = self.ctrl.pop_jump();
-                    self.ctrl.pop_jump();
-                    self.ctrl.pop_num();
-                    self.ctrl.pop_num();
+                    self.loops.pop_jump();
+                    self.loops.pop_num();
+                    self.loops.pop_num();
                     return jump + 1
                 }
             }
             I => {
-                if let Some(Number(i)) = self.ctrl.get(self.ctrl.len() - 3) {
+                if let Some(Number(i)) = self.loops.get(self.loops.len() - 2) {
                     self.stack.push(Number(i - 1.));
                 } else {
                     panic!("expected a number");
