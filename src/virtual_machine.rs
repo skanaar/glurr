@@ -255,6 +255,7 @@ impl VirtualMachine {
             Var => {
                 self.ctrl.push(Control(Mode::Var));
             }
+            Consume => todo!("todo"),
             Quote => self.ctrl.push(Control(Mode::Quote)),
             Emit => self.tokens.push(self.stack.pop_token()),
             OpenBrace => {
@@ -338,7 +339,17 @@ impl VirtualMachine {
                 let cond = self.stack.pop_bool();
                 return if cond { yes } else { no }
             },
-            Loop => todo!("Loop"),
+            Infinite => {
+                self.loops.push(Number(0.));
+                self.loops.push(Number(0.));
+                self.loops.push(Jump(self.stack.pop_jump()));
+            }
+            Loop => {
+                let jump = self.loops.pop_jump();
+                self.loops.push(Jump(jump));
+                self.ctrl.push(Jump(self.index));
+                return jump
+            }
             Range => {
                 self.loops.push(Number(self.stack.pop_num()));
                 self.loops.push(Number(self.stack.pop_num()));
@@ -374,7 +385,6 @@ impl VirtualMachine {
             }
             OpenParen => { self.ctrl.push(Control(Mode::Comment)) }
             CloseParen => panic!("unexpected CloseParen"),
-            Comment => todo!("Comment"),
             Dot => println!("{}", self.stack.pop_token().to_string()),
             Equal => {
                 let right = self.stack.pop_num();

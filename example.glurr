@@ -15,9 +15,9 @@ def complex-mult ( a b c d - x y ) {
   + §> swap
 } ;
 
-( 10 0 {  } loop )
 ( def var { consume symbol emit ' { emit 1 allot emit ' } emit ' ; emit } ; )
-( var foo - { 7 } ;  )
+( var foo { 7 } ; )
+( def /* { { consume "*/" = not leave-if } infinite loop } ; )
 
 def complex-sq ( 2n 2n - 2n ) { 2dup complex-mult } ;
 def complex-add ( a b c d - x y ) { rot + rot rot + swap } ;
@@ -66,6 +66,13 @@ def set-pixel ( r g b a ref i - ) {
 def range_w { range } ;
 def enumerate_w { enumerate } ;
 def for { ' range_w emit ' enumerate_w emit } ;
+
+var counter
+{
+  counter @ .
+  counter +1!
+  counter @ 5 > leave-if
+} infinite loop
 
 var img
 res res * 4 * allot img !
