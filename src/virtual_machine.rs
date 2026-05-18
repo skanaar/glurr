@@ -102,8 +102,10 @@ impl VirtualMachine {
             self.strs.push(raw_token.to_string());
             return Str(self.strs.len());
         }
-        if let Some(i) = self.dict.iter().position(|w| w.word == raw_token) {
-            return Word(i)
+        if let Some(symb_i) = self.syms.iter().position(|w| w == raw_token) {
+            if let Some(word_i) = self.dict.iter().position(|e| e.symbol == symb_i) {
+                return Word(word_i)
+            }
         }
         panic!("unknown word '{}'", raw_token)
     }

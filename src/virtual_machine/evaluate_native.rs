@@ -1,6 +1,7 @@
 use image::ImageBuffer;
 use crate::stack::Stack;
 use crate::model::{self, Nat};
+use crate::model::Mode;
 use crate::model::Token::*;
 use crate::model::Token;
 use super::VirtualMachine;
@@ -102,16 +103,16 @@ impl VirtualMachine {
             Include => todo!("Include"),
             Debug => {}
             Def => {
-                self.ctrl.push(Control(model::Mode::Def));
+                self.ctrl.push(Control(Mode::Def));
             }
             Var => {
-                self.ctrl.push(Control(model::Mode::Var));
+                self.ctrl.push(Control(Mode::Var));
             }
             Consume => todo!("todo"),
-            Quote => self.ctrl.push(Control(model::Mode::Quote)),
+            Quote => self.ctrl.push(Control(Mode::Quote)),
             Emit => self.tokens.push(self.stack.pop_token()),
             OpenBrace => {
-                self.ctrl.push(Control(model::Mode::Compile));
+                self.ctrl.push(Control(Mode::Compile));
                 self.stack.push(Jump(self.index + 1));
             }
             CloseBrace => {
@@ -122,10 +123,9 @@ impl VirtualMachine {
             }
             Semicolon => {
                 if let Some(Jump(jump)) = self.stack.pop() {
-                    if let Some(Symbol(i)) = self.stack.pop() {
-                        let symbol = &self.syms[i];
+                    if let Some(Symbol(symb_i)) = self.stack.pop() {
                         self.dict.push(super::DictEntry {
-                            word: symbol.clone(),
+                            symbol: symb_i,
                             jump: jump
                         })
                     } else { panic!("; requires a symbol") }
@@ -235,7 +235,7 @@ impl VirtualMachine {
                     panic!("expected a number");
                 }
             }
-            OpenParen => { self.ctrl.push(Control(model::Mode::Comment)) }
+            OpenParen => { self.ctrl.push(Control(Mode::Comment)) }
             CloseParen => panic!("unexpected CloseParen"),
             Dot => println!("{}", self.stack.pop_token().to_string()),
             Equal => {
@@ -275,7 +275,10 @@ impl VirtualMachine {
             },
             RevealTokens => {
                 for token in &self.tokens {
-                    println!("{}", token.to_string());
+                    match token {
+                        Word(i) => println!("Word({})", self.syms[self.dict[*i].symbol]),
+                        _ => println!("{}", token.to_string())
+                    }
                 }
             }
         }
