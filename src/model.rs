@@ -105,6 +105,7 @@ pub enum Nat {
     Read,
     Write,
     Assert,
+    RevealTokens
 }
 
 pub fn create_natives() -> HashMap<&'static str, Nat> {
@@ -166,5 +167,6 @@ pub fn create_natives() -> HashMap<&'static str, Nat> {
         ("@", Nat::Read),
         ("!", Nat::Write),
         ("assert", Nat::Assert),
+        ("reveal-tokens", Nat::RevealTokens),
     ])
 }
