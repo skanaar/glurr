@@ -276,7 +276,13 @@ impl VirtualMachine {
             RevealTokens => {
                 for token in &self.tokens {
                     match token {
-                        Word(i) => println!("Word({})", self.syms[self.dict[*i].symbol]),
+                        Jump(jmp) => {
+                            if let Some(word) = self.dict.iter().find(|e| e.jump == *jmp) {
+                                println!("Jump({})", self.syms[word.symbol])
+                            } else {
+                                println!("Jump({})", jmp);
+                            }
+                        },
                         _ => println!("{}", token.to_string())
                     }
                 }

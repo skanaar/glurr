@@ -7,7 +7,7 @@ use model::Token::*;
 mod evaluate_native;
 
 pub struct DictEntry {
-    word: String,
+    symbol: usize,
     jump: usize,
 }
 
@@ -92,19 +92,23 @@ impl VirtualMachine {
             self.tokens.push(Native(Nat::Semicolon));
             return Empty;
         }
+        // native
         if let Some(native) = self.natives.get(raw_token) {
             return Native(*native)
         }
+        // number
         if let Some(number) = raw_token.parse::<f64>().ok() {
             return Number(number);
         }
+        // string
         if raw_token.starts_with("\"") && raw_token.ends_with("\"") {
             self.strs.push(raw_token.to_string());
             return Str(self.strs.len());
         }
+        // word in dict
         if let Some(symb_i) = self.syms.iter().position(|w| w == raw_token) {
-            if let Some(word_i) = self.dict.iter().position(|e| e.symbol == symb_i) {
-                return Word(word_i)
+            if let Some(entry) = self.dict.iter().find(|e| e.symbol == symb_i) {
+                return Jump(entry.jump)
             }
         }
         panic!("unknown word '{}'", raw_token)
@@ -115,13 +119,9 @@ impl VirtualMachine {
             return self.index + 1;
         }
         if let Some(Control(Mode::Quote)) = self.ctrl.last() {
-            if let Word(word) = token {
-                self.ctrl.pop();
-                let jump = self.dict[word].jump;
-                self.stack.push(Jump(jump));
-                return self.index + 1;
-            }
-            panic!("expected a word");
+            self.ctrl.pop();
+            self.stack.push(token);
+            return self.index + 1;
         }
         if let Some(Control(Mode::Compile)) = self.ctrl.last() {
             if token == Native(Nat::OpenBrace) {
@@ -141,10 +141,6 @@ impl VirtualMachine {
             Jump(index) => {
                 self.ctrl.push(Jump(self.index + 1));
                 return index;
-            }
-            Token::Word(i) => {
-                self.ctrl.push(Jump(self.index + 1));
-                return self.dict[i].jump
             }
             Bool(x) => self.stack.push(Bool(x)),
             Empty => {},
