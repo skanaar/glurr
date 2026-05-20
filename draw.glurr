@@ -1,0 +1,30 @@
+( depends on "std.glurr" )
+
+def image! ( w h ref - ) { -rot * 4 * allot swap ! } ;
+
+def set-pixel ( r g b a ref i - ) {
+  2dup >§ >§ 4 * 3 + swap set
+  §> §> 2dup >§ >§ 4 * 2 + swap set
+  §> §> 2dup >§ >§ 4 * 1 + swap set
+  §> §> 4 * swap set
+} ;
+
+var .draw-image
+var .draw-width
+def draw-begin ( w h - ) { over .draw-width ! .draw-image image! } ;
+var .draw-r var .draw-g var .draw-b var .draw-a
+def draw-color! ( r g b a ) { .draw-a ! .draw-b ! .draw-g ! .draw-r ! } ;
+def draw-color@ ( r g b a ) { .draw-r @ .draw-g @ .draw-b @ .draw-a @ } ;
+def draw-pixel ( x y ) {
+  >§ >§ draw-color@ §> §> .draw-width @ * + .draw-image @ swap set-pixel
+} ;
+def 4dup { 4 pick 4 pick 4 pick 4 pick } ;
+var .draw-slope
+def draw-line ( x y x2 y2 ) {
+  4 pick 3 pick -
+  4 pick 3 pick -
+  swap / .draw-slope !
+  drop swap drop
+  >§ >§
+  { draw-color@ i i .draw-slope ! * draw-pixel } §> §> range enumerate
+} ;

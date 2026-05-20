@@ -11,8 +11,15 @@ pub struct DictEntry {
     jump: usize,
 }
 
+pub struct Included {
+    pub source_index: usize,
+    pub tokens: Vec<String>,
+}
+
 pub struct VirtualMachine {
     natives: HashMap<&'static str, Nat>,
+    includeables: HashMap<String, String>,
+    include_stack: Vec<Included>,
     index: usize,
     tokens: Vec<Token>,
     stack: Vec<Token>,
@@ -29,6 +36,8 @@ impl VirtualMachine {
     pub fn new() -> Self {
         Self {
             natives: create_natives(),
+            includeables: HashMap::new(),
+            include_stack: Vec::new(),
             index: 0,
             tokens: Vec::new(),
             stack: Vec::new(),
@@ -42,22 +51,51 @@ impl VirtualMachine {
         }
     }
 
+    pub fn include(&mut self, name: String, content: String) {
+        self.includeables.insert(name.clone(), content);
+    }
+
+    fn current_source(&self) -> &Vec<String> {
+        return &self.include_stack.last().unwrap().tokens;
+    }
+
+    fn src_pointer(&self) -> usize {
+        return self.include_stack.last().unwrap().source_index;
+    }
+
+    fn move_src_pointer(&mut self) {
+        let last = self.include_stack.len() - 1;
+        let i = self.src_pointer();
+        self.include_stack[last].source_index = i+1;
+        if self.src_pointer() >= self.current_source().len() {
+            self.include_stack.pop();
+        }
+    }
+
+    fn source_stack_push(&mut self, tokens: Vec<String>) {
+        if tokens.len() > 0 {
+            self.include_stack.push(Included { source_index: 0, tokens });
+        }
+    }
+
     pub fn interpret(&mut self, source: String) {
-        let raw_tokens: Vec<&str> = source
+        let raw_tokens: Vec<String> = source
             .split(char::is_whitespace)
             .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
             .collect();
         self.index = 0;
-        let mut source_index = 0;
-        while source_index < raw_tokens.len() {
-            let token = if self.index < self.tokens.len() {
-                self.tokens[self.index]
-            } else {
-                let token = self.parse(raw_tokens[source_index]);
-                source_index += 1;
-                self.tokens.push(token);
-                token
-            };
+        self.include_stack.push(Included { source_index: 0, tokens: raw_tokens });
+        while self.include_stack.len() > 0 && self.src_pointer() < self.current_source().len() {
+            while self.index < self.tokens.len() {
+                let token = self.tokens[self.index];
+                self.index = self.evaluate(token);
+            }
+            let src_i = self.src_pointer();
+            let raw = self.current_source()[src_i].clone();
+            let token = self.parse(&raw);
+            self.move_src_pointer();
+            self.tokens.push(token);
             self.index = self.evaluate(token);
         }
     }
@@ -102,8 +140,8 @@ impl VirtualMachine {
         }
         // string
         if raw_token.starts_with("\"") && raw_token.ends_with("\"") {
-            self.strs.push(raw_token.to_string());
-            return Str(self.strs.len());
+            self.strs.push(raw_token[1..raw_token.len()-1].to_string());
+            return Str(self.strs.len() - 1);
         }
         // word in dict
         if let Some(symb_i) = self.syms.iter().position(|w| w == raw_token) {
@@ -145,7 +183,7 @@ impl VirtualMachine {
             Bool(x) => self.stack.push(Bool(x)),
             Empty => {},
             Symbol(index) => self.stack.push(Symbol(index)),
-            Str(_) => panic!("strings not supported"),
+            Str(index) => self.stack.push(Str(index)),
         }
         return self.index + 1;
     }

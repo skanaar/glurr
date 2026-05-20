@@ -1,27 +1,10 @@
-def -rot ( a b c - c a b ) { rot rot } ;
-def 2dup ( a b - a b a b ) { swap dup rot dup rot swap } ;
-def 2over { 4 pick 4 pick } ;
-def over ( a b - a b a ) { swap dup rot swap } ;
-def if-else { >§ over >§ if §> not §> if } ;
-def +1! { dup @ 1 + swap ! } ;
-def sq { dup * } ;
-
-def complex-mult ( a b c d - x y ) {
-  4 pick 3 pick *
-  4 pick 3 pick * neg
-  + >§
-  -rot *
-  -rot *
-  + §> swap
-} ;
+"std.glurr" include
+"complex.glurr" include
+"draw.glurr" include
 
 ( def var { consume symbol emit ' { emit 1 allot emit ' } emit ' ; emit } ; )
 ( var foo { 7 } ; )
 ( def /* { { consume "*/" = not leave-if } infinite loop } ; )
-
-def complex-sq ( 2n 2n - 2n ) { 2dup complex-mult } ;
-def complex-add ( a b c d - x y ) { rot + rot rot + swap } ;
-def complex-neg ( a b - x y ) { neg swap neg swap } ;
 
 def mandelbrot-iter { complex-sq 2over complex-add } ;
 def sq-mag ( n n - n ) { dup * swap dup * + } ;
@@ -32,16 +15,12 @@ def x0 { -1.75 } ;
 def y0 { -1.25 } ;
 def scale { 2.5 } ;
 def res { 128 } ;
-def maxiter { 30 } ;
+def maxiter { 25 } ;
 def x { res mod } ;
 def y { res / floor } ;
 def real { res / scale * x0 + } ;
 def imag { res / scale * y0 + } ;
 def normalize { maxiter / } ;
-def max { 2dup > -rot ? } ;
-def min { 2dup < -rot ? } ;
-def >= { < not } ;
-def <= { > not } ;
 def sawtooth { dup 0.9 >= 0 rot ? } ;
 def rgba { floor dup 1 * 255 min dup 1 * 255 min 255 } ;
 def to-coord ( i - c z ) { dup x real swap y imag } ;
@@ -56,28 +35,20 @@ def mandelbrot-iterate ( c z - c z ) {
 def mandelbrot-at { 0 0 mandelbrot-iterate 4drop iter-count @ } ;
 def mandelbrot-pixel { to-coord mandelbrot-at normalize sawtooth 255 * rgba } ;
 
-def set-pixel ( r g b a ref i - ) {
-  2dup >§ >§ 4 * 3 + swap set
-  §> §> 2dup >§ >§ 4 * 2 + swap set
-  §> §> 2dup >§ >§ 4 * 1 + swap set
-  §> §> 4 * swap set
-} ;
-
-def range_w { range } ;
-def enumerate_w { enumerate } ;
-def for { ' range_w emit ' enumerate_w emit } ;
-
 var counter
 {
   counter @ .
   counter +1!
   counter @ 5 > leave-if
 } infinite loop
-(
+
 var img
 res res * 4 * allot img !
+"-----" .
 { i mandelbrot-pixel img @ i set-pixel } 0 res sq for
 img @ res display-image
-)
-
+128 128 draw-begin
+255 255 255 255 draw-color!
+{ i 2 / i draw-pixel } 0 128 for
+.draw-image @ 128 display-image
 ( reveal-tokens )

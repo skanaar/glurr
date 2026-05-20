@@ -100,7 +100,19 @@ impl VirtualMachine {
                 self.stack.push(a);
                 self.stack.push(a);
             }
-            Include => todo!("Include"),
+            Include => {
+                let str_i = self.stack.pop_str();
+                let name = self.strs[str_i].clone();
+                let Some(content) = self.includeables.get(&name) else {
+                    panic!("include name not listed at startup")
+                };
+                let tokens: Vec<String> = content
+                    .split(char::is_whitespace)
+                    .filter(|s| !s.is_empty())
+                    .map(|s| s.to_string())
+                    .collect();
+                self.source_stack_push(tokens);
+            }
             Debug => {}
             Def => {
                 self.ctrl.push(Control(Mode::Def));
@@ -186,10 +198,12 @@ impl VirtualMachine {
                 self.stack.push(if cond { true_val } else { false_val });
             }
             If => {
-                let no = self.stack.pop_jump();
-                let yes = self.stack.pop_jump();
+                let jump = self.stack.pop_jump();
                 let cond = self.stack.pop_bool();
-                return if cond { yes } else { no }
+                if cond {
+                    self.ctrl.push(Jump(self.index + 1));
+                    return jump
+                }
             },
             Infinite => {
                 self.loops.push(Number(0.));
@@ -237,7 +251,13 @@ impl VirtualMachine {
             }
             OpenParen => { self.ctrl.push(Control(Mode::Comment)) }
             CloseParen => panic!("unexpected CloseParen"),
-            Dot => println!("{}", self.stack.pop_token().to_string()),
+            Dot => {
+                let token = self.stack.pop_token();
+                match token {
+                    Str(si) => println!("\"{}\"", self.strs[si]),
+                    _ => println!("{}", token.to_string())
+                }
+            },
             Equal => {
                 let right = self.stack.pop_num();
                 let left = self.stack.pop_num();

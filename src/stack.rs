@@ -4,6 +4,7 @@ use model::Token;
 pub trait Stack<T> {
     fn pop_token(&mut self) -> Token;
     fn pop_num(&mut self) -> f64;
+    fn pop_str(&mut self) -> usize;
     fn pop_jump(&mut self) -> usize;
     fn pop_var(&mut self) -> usize;
     fn pop_array(&mut self) -> usize;
@@ -25,6 +26,11 @@ impl Stack<Token> for Vec<Token> {
     fn pop_bool(&mut self) -> bool {
         if let Some(Token::Bool(value)) = self.pop() { return value }
         panic!("expected a bool");
+    }
+
+    fn pop_str(&mut self) -> usize {
+        if let Some(Token::Str(value)) = self.pop() { return value }
+        panic!("expected a string");
     }
 
     fn pop_jump(&mut self) -> usize {

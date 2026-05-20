@@ -8,15 +8,16 @@ mod stack;
 
 use virtual_machine::VirtualMachine;
 
-
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let file_path = &args[1];
-    let contents = fs::read_to_string(file_path)
-        .expect("Should have been able to read the file");
+    let files: Vec<String> = env::args().skip(1).collect();
+    let start_file = fs::read_to_string(&files[0]).expect("Could not read file");
 
     let mut vm = VirtualMachine::new();
+    for filename in files {
+        let name = filename.clone();
+        vm.include(name, fs::read_to_string(&filename).expect("could not read file"))
+    }
     let start = Instant::now();
-    vm.interpret(contents);
+    vm.interpret(start_file);
     println!("elapsed: {}ms", start.elapsed().as_millis());
 }

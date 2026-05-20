@@ -1,0 +1,14 @@
+( depends on "std.glurr" )
+
+def complex-mult ( a b c d - x y ) {
+  4 pick 3 pick *
+  4 pick 3 pick * neg
+  + >§
+  -rot *
+  -rot *
+  + §> swap
+} ;
+
+def complex-sq ( 2n 2n - 2n ) { 2dup complex-mult } ;
+def complex-add ( a b c d - x y ) { rot + rot rot + swap } ;
+def complex-neg ( a b - x y ) { neg swap neg swap } ;
