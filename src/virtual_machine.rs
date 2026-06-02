@@ -5,6 +5,7 @@ use model::{create_natives, Mode, Nat, Token};
 use model::Token::*;
 
 mod evaluate_native;
+mod pop;
 
 pub struct DictEntry {
     symbol: usize,
@@ -17,6 +18,7 @@ pub struct Included {
 }
 
 pub struct VirtualMachine {
+    pub flag_trace: bool,
     natives: HashMap<&'static str, Nat>,
     includeables: HashMap<String, String>,
     include_stack: Vec<Included>,
@@ -35,6 +37,7 @@ pub struct VirtualMachine {
 impl VirtualMachine {
     pub fn new() -> Self {
         Self {
+            flag_trace: false,
             natives: create_natives(),
             includeables: HashMap::new(),
             include_stack: Vec::new(),
@@ -186,5 +189,18 @@ impl VirtualMachine {
             Str(index) => self.stack.push(Str(index)),
         }
         return self.index + 1;
+    }
+
+    pub fn serialize_token(&self, token: &Token) -> String {
+        match token {
+            Jump(jmp) => {
+                if let Some(word) = self.dict.iter().find(|e| e.jump == *jmp) {
+                    return format!("Jump({})", self.syms[word.symbol])
+                } else {
+                    return format!("Jump({})", jmp);
+                }
+            },
+            _ => return format!("{}", token.to_string())
+        }
     }
 }

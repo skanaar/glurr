@@ -9,10 +9,16 @@ mod stack;
 use virtual_machine::VirtualMachine;
 
 fn main() {
-    let files: Vec<String> = env::args().skip(1).collect();
-    let start_file = fs::read_to_string(&files[0]).expect("Could not read file");
+    let args: Vec<String> = env::args().skip(1).collect();
+    let flags: Vec<&String> =
+        args.iter().filter(|e| e.chars().next() == Some('-')).collect();
+    let files: Vec<&String> = args.iter().skip(flags.len()).collect();
+    let start_file = fs::read_to_string(&files[0]).expect("Can't read file");
+
+    let trace = flags.iter().any(|e| e.to_string() == "--debug".to_string());
 
     let mut vm = VirtualMachine::new();
+    vm.flag_trace = trace;
     for filename in files {
         let name = filename.clone();
         vm.include(name, fs::read_to_string(&filename).expect("could not read file"))

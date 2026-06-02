@@ -23,7 +23,7 @@ impl Token {
                 let nats = create_natives();
                 if let Some(pair) = nats.iter().find(|e| e.1 == native) {
                     let name = pair.0;
-                    return format!("Native({})", name);
+                    return format!("{}", name);
                 }
                 panic!("unknown native");
             },

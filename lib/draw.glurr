@@ -1,4 +1,4 @@
-( depends on "std.glurr" )
+"lib/std.glurr" depend
 
 def image! ( w h ref - ) { -rot * 4 * allot swap ! } ;
 

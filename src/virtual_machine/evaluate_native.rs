@@ -11,51 +11,51 @@ impl VirtualMachine {
         use model::Nat::*;
         match native {
             Plus => {
-                let sum = self.stack.pop_num() + self.stack.pop_num();
+                let sum = self.pop_num() + self.pop_num();
                 self.stack.push(Token::Number(sum));
             }
             Minus => {
-                let rhs = self.stack.pop_num();
-                let lhs = self.stack.pop_num();
+                let rhs = self.pop_num();
+                let lhs = self.pop_num();
                 self.stack.push(Token::Number(lhs - rhs));
             }
             Multiply => {
-                let prod = self.stack.pop_num() * self.stack.pop_num();
+                let prod = self.pop_num() * self.pop_num();
                 self.stack.push(Token::Number(prod));
             }
             Divide => {
-                let rhs = self.stack.pop_num();
-                let lhs = self.stack.pop_num();
+                let rhs = self.pop_num();
+                let lhs = self.pop_num();
                 self.stack.push(Token::Number(lhs / rhs));
             }
             Pow => {
-                let rhs = self.stack.pop_num();
-                let lhs = self.stack.pop_num();
+                let rhs = self.pop_num();
+                let lhs = self.pop_num();
                 self.stack.push(Token::Number(lhs.powf(rhs)));
             }
             Mod => {
-                let rhs = self.stack.pop_num();
-                let lhs = self.stack.pop_num();
+                let rhs = self.pop_num();
+                let lhs = self.pop_num();
                 self.stack.push(Token::Number(lhs.rem_euclid(rhs)));
             }
             Floor => {
-                let value = self.stack.pop_num();
+                let value = self.pop_num();
                 self.stack.push(Token::Number(value.floor()));
             }
             Ceil => {
-                let value = self.stack.pop_num();
+                let value = self.pop_num();
                 self.stack.push(Token::Number(value.ceil()));
             }
             Round => {
-                let value = self.stack.pop_num();
+                let value = self.pop_num();
                 self.stack.push(Token::Number(value.round()));
             }
             Abs => {
-                let value = self.stack.pop_num();
+                let value = self.pop_num();
                 self.stack.push(Token::Number(value.abs()));
             }
             Neg => {
-                let value = self.stack.pop_num();
+                let value = self.pop_num();
                 self.stack.push(Token::Number(-value));
             }
             Dots => {
@@ -66,21 +66,21 @@ impl VirtualMachine {
             }
             Drop => { self.stack.pop(); }
             Swap => {
-                let a = self.stack.pop_token();
-                let b = self.stack.pop_token();
+                let a = self.pop_token();
+                let b = self.pop_token();
                 self.stack.push(a);
                 self.stack.push(b);
             }
             Rot => {
-                let a = self.stack.pop_token();
-                let b = self.stack.pop_token();
-                let c = self.stack.pop_token();
+                let a = self.pop_token();
+                let b = self.pop_token();
+                let c = self.pop_token();
                 self.stack.push(b);
                 self.stack.push(a);
                 self.stack.push(c);
             }
             Pick => {
-                let offset = self.stack.pop_num();
+                let offset = self.pop_num();
                 let index = self.stack.len() - offset as usize;
                 if let Some(token) = self.stack.get(index) {
                     self.stack.push(token.clone());
@@ -89,19 +89,19 @@ impl VirtualMachine {
                 }
             }
             Over => {
-                let a = self.stack.pop_token();
-                let b = self.stack.pop_token();
+                let a = self.pop_token();
+                let b = self.pop_token();
                 self.stack.push(b);
                 self.stack.push(a);
                 self.stack.push(b);
             }
             Dup => {
-                let a = self.stack.pop_token();
+                let a = self.pop_token();
                 self.stack.push(a);
                 self.stack.push(a);
             }
             Include => {
-                let str_i = self.stack.pop_str();
+                let str_i = self.pop_str();
                 let name = self.strs[str_i].clone();
                 let Some(content) = self.includeables.get(&name) else {
                     panic!("include name not listed at startup")
@@ -122,7 +122,10 @@ impl VirtualMachine {
             }
             Consume => todo!("todo"),
             Quote => self.ctrl.push(Control(Mode::Quote)),
-            Emit => self.tokens.push(self.stack.pop_token()),
+            Emit => {
+                let token = self.pop_token();
+                self.tokens.push(token);
+            },
             OpenBrace => {
                 self.ctrl.push(Control(Mode::Compile));
                 self.stack.push(Jump(self.index + 1));
@@ -143,7 +146,10 @@ impl VirtualMachine {
                     } else { panic!("; requires a symbol") }
                 } else { panic!("; requires a jump") }
             }
-            StoreCtrl => self.ctrl.push(self.stack.pop_token()),
+            StoreCtrl => {
+                let token = self.pop_token();
+                self.ctrl.push(token);
+            },
             ReadCtrl => self.stack.push(self.ctrl.pop_token()),
             CopyCtrl => {
                 let val = self.ctrl.pop_token();
@@ -151,33 +157,33 @@ impl VirtualMachine {
                 self.stack.push(val.clone());
             },
             Invoke => {
-                let jump = self.stack.pop_jump();
+                let jump = self.pop_jump();
                 self.ctrl.push(Jump(self.index + 1));
                 return jump;
             }
             Allot => {
-                let len = self.stack.pop_num() as usize;
+                let len = self.pop_num() as usize;
                 let mut array: Vec<f64> = Vec::with_capacity(len);
                 for _ in 0..len { array.push(0.) }
                 self.arrays.push(array);
                 self.stack.push(Array(self.arrays.len() - 1))
             }
             Set => {
-                let array_ref = self.stack.pop_array() as usize;
-                let index = self.stack.pop_num() as usize;
-                let value = self.stack.pop_num() as f64;
+                let array_ref = self.pop_array() as usize;
+                let index = self.pop_num() as usize;
+                let value = self.pop_num() as f64;
                 let array = &mut self.arrays[array_ref];
                 array[index] = value;
             }
             Get => {
-                let array_ref = self.stack.pop_array() as usize;
-                let index = self.stack.pop_num() as usize;
+                let array_ref = self.pop_array() as usize;
+                let index = self.pop_num() as usize;
                 let array = &mut self.arrays[array_ref];
                 self.stack.push(Number(array[index] as f64));
             }
             DisplayImage => {
-                let width = self.stack.pop_num() as u32;
-                let array_ref = self.stack.pop_array();
+                let width = self.pop_num() as u32;
+                let array_ref = self.pop_array();
                 let array = &mut self.arrays[array_ref];
                 let height = array.len() as u32 / (width * 4);
                 let img = ImageBuffer::from_fn(width, height, |x, y| {
@@ -192,14 +198,14 @@ impl VirtualMachine {
                 res.expect("failed to write image")
             }
             Questionmark => {
-                let false_val = self.stack.pop_token();
-                let true_val = self.stack.pop_token();
-                let cond = self.stack.pop_bool();
+                let false_val = self.pop_token();
+                let true_val = self.pop_token();
+                let cond = self.pop_bool();
                 self.stack.push(if cond { true_val } else { false_val });
             }
             If => {
-                let jump = self.stack.pop_jump();
-                let cond = self.stack.pop_bool();
+                let jump = self.pop_jump();
+                let cond = self.pop_bool();
                 if cond {
                     self.ctrl.push(Jump(self.index + 1));
                     return jump
@@ -208,7 +214,8 @@ impl VirtualMachine {
             Infinite => {
                 self.loops.push(Number(0.));
                 self.loops.push(Number(0.));
-                self.loops.push(Jump(self.stack.pop_jump()));
+                let jmp = self.pop_jump();
+                self.loops.push(Jump(jmp));
             }
             Loop => {
                 let jump = self.loops.pop_jump();
@@ -217,9 +224,12 @@ impl VirtualMachine {
                 return jump
             }
             Range => {
-                self.loops.push(Number(self.stack.pop_num()));
-                self.loops.push(Number(self.stack.pop_num()));
-                self.loops.push(Jump(self.stack.pop_jump()));
+                let to = self.pop_num();
+                let from = self.pop_num();
+                let jmp = self.pop_jump();
+                self.loops.push(Number(to));
+                self.loops.push(Number(from));
+                self.loops.push(Jump(jmp));
             }
             Enumerate => {
                 let jump = self.loops.pop_jump();
@@ -234,7 +244,7 @@ impl VirtualMachine {
                 }
             }
             LeaveIf => {
-                if self.stack.pop_bool() {
+                if self.pop_bool() {
                     let jump = self.ctrl.pop_jump();
                     self.loops.pop_jump();
                     self.loops.pop_num();
@@ -252,59 +262,50 @@ impl VirtualMachine {
             OpenParen => { self.ctrl.push(Control(Mode::Comment)) }
             CloseParen => panic!("unexpected CloseParen"),
             Dot => {
-                let token = self.stack.pop_token();
+                let token = self.pop_token();
                 match token {
                     Str(si) => println!("\"{}\"", self.strs[si]),
                     _ => println!("{}", token.to_string())
                 }
             },
             Equal => {
-                let right = self.stack.pop_num();
-                let left = self.stack.pop_num();
+                let right = self.pop_num();
+                let left = self.pop_num();
                 self.stack.push(Bool(left == right));
             }
             GreaterThan => {
-                let right = self.stack.pop_num();
-                let left = self.stack.pop_num();
+                let right = self.pop_num();
+                let left = self.pop_num();
                 self.stack.push(Bool(left > right));
             }
             LessThan => {
-                let right = self.stack.pop_num();
-                let left = self.stack.pop_num();
+                let right = self.pop_num();
+                let left = self.pop_num();
                 self.stack.push(Bool(left < right));
             }
             Not => {
-                let cond = self.stack.pop_bool();
+                let cond = self.pop_bool();
                 self.stack.push(Bool(!cond));
             }
             True => self.stack.push(Bool(true)),
             False => self.stack.push(Bool(false)),
             Read => {
-                let index = self.stack.pop_var();
+                let index = self.pop_var();
                 let token = self.vars[index];
                 self.stack.push(token);
             },
             Write => {
-                let index = self.stack.pop_var();
-                let token = self.stack.pop_token();
+                let index = self.pop_var();
+                let token = self.pop_token();
                 self.vars[index] = token;
             },
             Assert => {
-                let cond = self.stack.pop_bool();
+                let cond = self.pop_bool();
                 if !cond { panic!("assertion failed") }
             },
             RevealTokens => {
                 for token in &self.tokens {
-                    match token {
-                        Jump(jmp) => {
-                            if let Some(word) = self.dict.iter().find(|e| e.jump == *jmp) {
-                                println!("Jump({})", self.syms[word.symbol])
-                            } else {
-                                println!("Jump({})", jmp);
-                            }
-                        },
-                        _ => println!("{}", token.to_string())
-                    }
+                    self.serialize_token(token);
                 }
             }
         }

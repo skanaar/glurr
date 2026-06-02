@@ -11,3 +11,6 @@ def >= { < not } ;
 def <= { > not } ;
 
 def for { ' range emit ' enumerate emit } ;
+
+( a documenting word )
+def depend ( s ) { drop } ;

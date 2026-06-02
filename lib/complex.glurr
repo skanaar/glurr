@@ -1,4 +1,4 @@
-( depends on "std.glurr" )
+"lib/std.glurr" depend
 
 def complex-mult ( a b c d - x y ) {
   4 pick 3 pick *

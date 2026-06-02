@@ -1,6 +1,6 @@
-"std.glurr" include
-"complex.glurr" include
-"draw.glurr" include
+"lib/std.glurr" include
+"lib/complex.glurr" include
+"lib/draw.glurr" include
 
 ( def var { consume symbol emit ' { emit 1 allot emit ' } emit ' ; emit } ; )
 ( var foo { 7 } ; )

@@ -1,0 +1,11 @@
+( work in progress )
+
+def list ( n ref - ) { swap 1 + allot over ! 0 swap ! } ;
+def append ( e ref - ) { swap over dup 0 get 1 + swap set dup 0 get 1 + 0 swap set } ;
+def , ( ref e - ref ) { over append } ;
+def ,. ( ref e - ) { swap append } ;
+
+var .items
+8 .items list
+7 .items append
+.items 1 , 2 , 3 ,.
