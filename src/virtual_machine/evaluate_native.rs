@@ -264,8 +264,8 @@ impl VirtualMachine {
             Dot => {
                 let token = self.pop_token();
                 match token {
-                    Str(si) => println!("\"{}\"", self.strs[si]),
-                    _ => println!("{}", token.to_string())
+                    Str(si) => print!("{}", self.strs[si]),
+                    _ => print!("{}", token.to_string())
                 }
             },
             Equal => {

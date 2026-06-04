@@ -15,7 +15,8 @@ fn main() {
     let files: Vec<&String> = args.iter().skip(flags.len()).collect();
     let start_file = fs::read_to_string(&files[0]).expect("Can't read file");
 
-    let trace = flags.iter().any(|e| e.to_string() == "--debug".to_string());
+    let trace = flags.iter().any(|e| e.to_string() == "--trace".to_string());
+    let time = flags.iter().any(|e| e.to_string() == "--time".to_string());
 
     let mut vm = VirtualMachine::new();
     vm.flag_trace = trace;
@@ -25,5 +26,5 @@ fn main() {
     }
     let start = Instant::now();
     vm.interpret(start_file);
-    println!("elapsed: {}ms", start.elapsed().as_millis());
+    if time { println!("elapsed: {}ms", start.elapsed().as_millis()) }
 }

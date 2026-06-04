@@ -10,6 +10,8 @@ def min { 2dup < -rot ? } ;
 def >= { < not } ;
 def <= { > not } ;
 
+def .n { . "\n" . } ;
+
 def for { ' range emit ' enumerate emit } ;
 
 ( a documenting word )

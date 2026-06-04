@@ -143,7 +143,10 @@ impl VirtualMachine {
         }
         // string
         if raw_token.starts_with("\"") && raw_token.ends_with("\"") {
-            self.strs.push(raw_token[1..raw_token.len()-1].to_string());
+            let s = raw_token[1..raw_token.len()-1]
+                .to_string()
+                .replace("\\n", "\n");
+            self.strs.push(s);
             return Str(self.strs.len() - 1);
         }
         // word in dict
@@ -152,6 +155,9 @@ impl VirtualMachine {
                 return Jump(entry.jump)
             }
         }
+        let context = self.tokens[(self.index-5)..(self.index)].iter();
+        let strings: Vec<String> = context.map(|x| self.serialize_token(x)).collect();
+        println!("\x1b[93m{}\x1b[0m", strings.join(" "));
         panic!("unknown word '{}'", raw_token)
     }
 
