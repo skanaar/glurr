@@ -1,11 +1,20 @@
-( work in progress )
+"lib/std.glurr" depend
 
-def list ( n ref - ) { swap 1 + allot over ! 0 swap ! } ;
-def append ( e ref - ) { swap over dup 0 get 1 + swap set dup 0 get 1 + 0 swap set } ;
+(
+# create list with capacity 7
+7 .items list
+
+# append numbers to the list
+.items 9 , 4 , 5 ,.
+
+# append single number
+13 .items append
+)
+
+def list ( n ref - ) { swap 1 + allot over ! 0 swap 0 swap @ set } ;
+def length ( ref - ) { @ 0 swap get } ;
+def at ( i ref - ) { @ swap 1 + swap get } ;
+def grow ( list - ) { 0 over get 1 + 0 rot set } ;
+def append ( e ref - ) { swap over dup length 1 + swap @ set @ grow } ;
 def , ( ref e - ref ) { over append } ;
 def ,. ( ref e - ) { swap append } ;
-
-var .items
-8 .items list
-7 .items append
-.items 1 , 2 , 3 ,.

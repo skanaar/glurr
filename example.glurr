@@ -1,6 +1,7 @@
 "lib/std.glurr" include
 "lib/complex.glurr" include
 "lib/draw.glurr" include
+"lib/list.glurr" include
 
 ( def var { consume symbol emit ' { emit 1 allot emit ' } emit ' ; emit } ; )
 ( var foo { 7 } ; )
@@ -14,7 +15,7 @@ def 4drop { drop drop drop drop } ;
 def x0 { -1.75 } ;
 def y0 { -1.25 } ;
 def scale { 2.5 } ;
-def res { 16 } ;
+def res { 20 } ;
 def maxiter { 25 } ;
 def x { res mod } ;
 def y { res / floor } ;
@@ -37,14 +38,6 @@ def mandelbrot-pixel { to-coord mandelbrot-at normalize sawtooth 255 * rgba } ;
 def charpixel { 0.5 < "-" "#" ? } ;
 def mandelbrot-char { to-coord mandelbrot-at normalize charpixel i res mod 0 = { "" .n } if } ;
 
-var counter
-{
-  counter @ . "," .
-  counter +1!
-  counter @ 5 > leave-if
-} infinite loop
-"" .n
-
 var img
 res res * 4 * allot img !
 "-----" .n
@@ -55,4 +48,5 @@ img @ res display-image
 255 255 255 255 draw-color!
 { i 2 / i draw-pixel } 0 128 for
 .draw-image @ 128 display-image
+
 ( reveal-tokens )

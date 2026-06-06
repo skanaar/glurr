@@ -1,6 +1,8 @@
+use std::cmp::{max, min};
 use std::collections::HashMap;
 
 use crate::model;
+use crate::stack::Stack;
 use model::{create_natives, Mode, Nat, Token};
 use model::Token::*;
 
@@ -18,7 +20,7 @@ pub struct Included {
 }
 
 pub struct VirtualMachine {
-    pub flag_trace: bool,
+    pub flag_debug: bool,
     natives: HashMap<&'static str, Nat>,
     includeables: HashMap<String, String>,
     include_stack: Vec<Included>,
@@ -37,7 +39,7 @@ pub struct VirtualMachine {
 impl VirtualMachine {
     pub fn new() -> Self {
         Self {
-            flag_trace: false,
+            flag_debug: false,
             natives: create_natives(),
             includeables: HashMap::new(),
             include_stack: Vec::new(),
@@ -113,7 +115,7 @@ impl VirtualMachine {
         if let Some(Control(Mode::Def)) = self.ctrl.last() {
             self.ctrl.pop();
             if self.syms.iter().any(|e| *e == raw_token) {
-                panic!("Symbol {} already defined", raw_token);
+                self.panic("Symbol already defined");
             }
             self.syms.push(raw_token.to_string());
             return Symbol(self.syms.len() - 1);
@@ -121,6 +123,7 @@ impl VirtualMachine {
         if let Some(Control(Mode::Var)) = self.ctrl.last() {
             self.ctrl.pop();
             if self.syms.iter().any(|e| *e == raw_token) {
+                self.print_trace();
                 panic!("Symbol {} already defined", raw_token);
             }
             self.vars.push(Number(0.));
@@ -155,9 +158,7 @@ impl VirtualMachine {
                 return Jump(entry.jump)
             }
         }
-        let context = self.tokens[(self.index-5)..(self.index)].iter();
-        let strings: Vec<String> = context.map(|x| self.serialize_token(x)).collect();
-        println!("\x1b[93m{}\x1b[0m", strings.join(" "));
+        self.print_trace();
         panic!("unknown word '{}'", raw_token)
     }
 
@@ -184,7 +185,7 @@ impl VirtualMachine {
             Number(x) => self.stack.push(Number(x)),
             Var(x) => self.stack.push(Var(x)),
             Array(x) => self.stack.push(Array(x)),
-            Control(_) => panic!("cannot evaluate a control token"),
+            Control(_) => self.panic("cannot evaluate a control token"),
             Jump(index) => {
                 self.ctrl.push(Jump(self.index + 1));
                 return index;
@@ -208,5 +209,25 @@ impl VirtualMachine {
             },
             _ => return format!("{}", token.to_string())
         }
+    }
+
+    pub fn print_trace(&self) {
+        let from = max(0, self.index-15);
+        let to = min(self.index-15, self.tokens.len()-1);
+        let context = self.tokens[from..=to].iter();
+        let strings: Vec<String> = context.map(|x| self.serialize_token(x)).collect();
+        println!("\x1b[93m{}\x1b[0m", strings.join(" "));
+    }
+
+    pub fn panic(&self, msg: &'static str) -> ! {
+        if self.flag_debug {
+            self.print_trace();
+            print!("data stack: "); self.stack.print();
+            print!("ctrl stack: "); self.ctrl.print();
+            print!("loop stack: "); self.loops.print();
+            println!("token pointer {}", self.index);
+            panic!("{}", msg);
+        }
+        panic!("{}. run with --debug to inspect stacks", msg);
     }
 }

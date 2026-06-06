@@ -1,4 +1,4 @@
-use crate::{model::Token, stack::Stack};
+use crate::model::Token;
 use super::VirtualMachine;
 
 impl VirtualMachine {
@@ -47,19 +47,8 @@ impl VirtualMachine {
     fn stop(&self, msg: &'static str, token: Option<Token>) -> ! {
         let word = self.tokens[self.index];
         let word_desc = self.serialize_token(&word);
-        println!("\x1b[91m'{}' {}\x1b[0m", word_desc, msg);
-        if self.flag_trace {
-            let context = self.tokens[(self.index-5)..(self.index+1)].iter();
-            let strings: Vec<String> = context.map(|x| self.serialize_token(x)).collect();
-            println!("\x1b[93m{}\x1b[0m", strings.join(" "));
-            let mut data_stack = self.stack.clone();
-            if let Some(val) = token { data_stack.push(val); }
-            print!("data stack: "); data_stack.print();
-            print!("ctrl stack: "); self.ctrl.print();
-            print!("loop stack: "); self.loops.print();
-            println!("token pointer {}", self.index);
-            panic!("{}", msg);
-        }
-        panic!("{}. run with --debug to inspect stacks", msg);
+        let tok = if let Some(val) = token { val.to_string() } else { "-".to_string() };
+        println!("\x1b[91m'{}' {} found {}\x1b[0m", word_desc, msg, tok);
+        self.panic(msg);
     }
 }

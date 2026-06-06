@@ -85,7 +85,8 @@ impl VirtualMachine {
                 if let Some(token) = self.stack.get(index) {
                     self.stack.push(token.clone());
                 } else {
-                    panic!("stack is empty");
+                    self.print_trace();
+                    self.panic("stack is empty");
                 }
             }
             Over => {
@@ -104,7 +105,7 @@ impl VirtualMachine {
                 let str_i = self.pop_str();
                 let name = self.strs[str_i].clone();
                 let Some(content) = self.includeables.get(&name) else {
-                    panic!("include name not listed at startup")
+                    self.panic("include not listed at startup")
                 };
                 let tokens: Vec<String> = content
                     .split(char::is_whitespace)
@@ -134,7 +135,8 @@ impl VirtualMachine {
                 if let Some(Jump(index)) = self.ctrl.pop() {
                     return index;
                 }
-                panic!("no return jump on ctrl stack");
+                self.print_trace();
+                self.panic("no return jump on ctrl stack");
             }
             Semicolon => {
                 if let Some(Jump(jump)) = self.stack.pop() {
@@ -143,8 +145,8 @@ impl VirtualMachine {
                             symbol: symb_i,
                             jump: jump
                         })
-                    } else { panic!("; requires a symbol") }
-                } else { panic!("; requires a jump") }
+                    } else { self.panic("; requires a symbol") }
+                } else { self.panic("; requires a jump") }
             }
             StoreCtrl => {
                 let token = self.pop_token();
@@ -256,11 +258,11 @@ impl VirtualMachine {
                 if let Some(Number(i)) = self.loops.get(self.loops.len() - 2) {
                     self.stack.push(Number(i - 1.));
                 } else {
-                    panic!("expected a number");
+                    self.panic("expected a number");
                 }
             }
             OpenParen => { self.ctrl.push(Control(Mode::Comment)) }
-            CloseParen => panic!("unexpected CloseParen"),
+            CloseParen => self.panic("unexpected CloseParen"),
             Dot => {
                 let token = self.pop_token();
                 match token {
@@ -301,7 +303,7 @@ impl VirtualMachine {
             },
             Assert => {
                 let cond = self.pop_bool();
-                if !cond { panic!("assertion failed") }
+                if !cond { self.panic("assertion failed") }
             },
             RevealTokens => {
                 for token in &self.tokens {
