@@ -170,6 +170,38 @@ impl VirtualMachine {
                 self.arrays.push(array);
                 self.stack.push(Array(self.arrays.len() - 1))
             }
+            JumpAsNumber => {
+                let jump = self.pop_jump();
+                self.stack.push(Number(jump as f64))
+            },
+            StringAsNumber => {
+                let str = self.pop_str();
+                self.stack.push(Number(str as f64))
+            },
+            VarAsNumber => {
+                let var = self.pop_var();
+                self.stack.push(Number(var as f64))
+            },
+            ArrayAsNumber => {
+                let array = self.pop_array();
+                self.stack.push(Number(array as f64))
+            },
+            NumberAsJump => {
+                let num = self.pop_num();
+                self.stack.push(Jump(num as usize))
+            },
+            NumberAsString => {
+                let num = self.pop_num();
+                self.stack.push(Str(num as usize))
+            },
+            NumberAsVar => {
+                let num = self.pop_num();
+                self.stack.push(Token::Var(num as usize))
+            },
+            NumberAsArray => {
+                let num = self.pop_num();
+                self.stack.push(Array(num as usize))
+            },
             Set => {
                 let array_ref = self.pop_array() as usize;
                 let index = self.pop_num() as usize;

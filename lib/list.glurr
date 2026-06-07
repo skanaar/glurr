@@ -12,9 +12,9 @@
 )
 
 def list ( n ref - ) { swap 1 + allot over ! 0 swap 0 swap @ set } ;
-def length ( ref - ) { @ 0 swap get } ;
-def at ( i ref - ) { @ swap 1 + swap get } ;
-def grow ( list - ) { 0 over get 1 + 0 rot set } ;
-def append ( e ref - ) { swap over dup length 1 + swap @ set @ grow } ;
+def length ( ref - n ) { @ 0 swap get } ;
+def grow ( ref - ) { @ 0 over get 1 + 0 rot set } ;
+def at ( i ref - n ) { @ swap 1 + swap get } ;
+def append ( e ref - ) { swap over dup length 1 + swap @ set grow } ;
 def , ( ref e - ref ) { over append } ;
 def ,. ( ref e - ) { swap append } ;

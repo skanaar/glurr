@@ -35,8 +35,15 @@ def mandelbrot-iterate ( c z - c z ) {
 
 def mandelbrot-at { 0 0 mandelbrot-iterate 4drop iter-count @ } ;
 def mandelbrot-pixel { to-coord mandelbrot-at normalize sawtooth 255 * rgba } ;
-def charpixel { 0.5 < "-" "#" ? } ;
-def mandelbrot-char { to-coord mandelbrot-at normalize charpixel i res mod 0 = { "" .n } if } ;
+var .spectrum
+4 .spectrum list
+.spectrum
+   "░" string-as-number ,
+   "▒" string-as-number ,
+   "▓" string-as-number ,
+   "█" string-as-number ,.
+def charpixel { 4 * floor .spectrum at number-as-string } ;
+def mandelbrot-char { to-coord mandelbrot-at normalize charpixel i res mod 0 = { "\n" . } if } ;
 
 var img
 res res * 4 * allot img !
