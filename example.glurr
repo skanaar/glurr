@@ -15,12 +15,13 @@ def 4drop { drop drop drop drop } ;
 def x0 { -1.75 } ;
 def y0 { -1.25 } ;
 def scale { 2.5 } ;
-def res { 20 } ;
-def maxiter { 25 } ;
-def x { res mod } ;
-def y { res / floor } ;
-def real { res / scale * x0 + } ;
-def imag { res / scale * y0 + } ;
+def res-x { 40 } ;
+def res-y { 20 } ;
+def maxiter { 50 } ;
+def x { res-x mod } ;
+def y { res-x / floor } ;
+def real { res-x / scale * x0 + } ;
+def imag { res-y / scale * y0 + } ;
 def normalize { maxiter / } ;
 def sawtooth { dup 0.9 >= 0 rot ? } ;
 def rgba { floor dup 1 * 255 min dup 1 * 255 min 255 } ;
@@ -38,19 +39,20 @@ def mandelbrot-pixel { to-coord mandelbrot-at normalize sawtooth 255 * rgba } ;
 var .spectrum
 4 .spectrum list
 .spectrum
-   "░" string-as-number ,
-   "▒" string-as-number ,
-   "▓" string-as-number ,
-   "█" string-as-number ,.
-def charpixel { 4 * floor .spectrum at number-as-string } ;
-def mandelbrot-char { to-coord mandelbrot-at normalize charpixel i res mod 0 = { "\n" . } if } ;
+  "░" string-as-number ,
+  "▒" string-as-number ,
+  "▓" string-as-number ,
+  "█" string-as-number ,.
+def charpixel { .spectrum length * floor .spectrum at number-as-string } ;
+def break-row { i res-x mod 0 = { "\n" . } if } ;
+def mandelbrot-char { to-coord mandelbrot-at normalize charpixel break-row } ;
 
 var img
-res res * 4 * allot img !
+res-x res-y * 4 * allot img !
 "-----" .n
-( { i mandelbrot-pixel img @ i set-pixel } 0 res sq for )
-{ i mandelbrot-char . } 0 res sq for "" .n
-img @ res display-image
+( { i mandelbrot-pixel img @ i set-pixel } 0 res-x res-y * for )
+{ i mandelbrot-char . } 0 res-x res-y * for "\n" .
+img @ res-x display-image
 128 128 draw-begin
 255 255 255 255 draw-color!
 { i 2 / i draw-pixel } 0 128 for
