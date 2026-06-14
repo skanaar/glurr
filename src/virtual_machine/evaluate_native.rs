@@ -104,15 +104,10 @@ impl VirtualMachine {
             Include => {
                 let str_i = self.pop_str();
                 let name = self.strs[str_i].clone();
-                let Some(content) = self.includeables.get(&name) else {
+                let Some(content) = self.includeables.get(&name).cloned() else {
                     self.panic("include not listed at startup")
                 };
-                let tokens: Vec<String> = content
-                    .split(char::is_whitespace)
-                    .filter(|s| !s.is_empty())
-                    .map(|s| s.to_string())
-                    .collect();
-                self.source_stack_push(tokens);
+                self.include(&name, &content);
             }
             Debug => {}
             Def => {

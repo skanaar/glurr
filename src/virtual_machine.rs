@@ -56,7 +56,7 @@ impl VirtualMachine {
         }
     }
 
-    pub fn include(&mut self, name: String, content: String) {
+    pub fn register_file(&mut self, name: String, content: String) {
         self.includeables.insert(name.clone(), content);
     }
 
@@ -77,20 +77,19 @@ impl VirtualMachine {
         }
     }
 
-    fn source_stack_push(&mut self, tokens: Vec<String>) {
+    fn include(&mut self, _: &String, source: &String) {
+        let tokens: Vec<String> = source
+            .split(char::is_whitespace)
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .collect();
         if tokens.len() > 0 {
             self.include_stack.push(Included { source_index: 0, tokens });
         }
     }
 
-    pub fn interpret(&mut self, source: String) {
-        let raw_tokens: Vec<String> = source
-            .split(char::is_whitespace)
-            .filter(|s| !s.is_empty())
-            .map(|s| s.to_string())
-            .collect();
-        self.index = 0;
-        self.include_stack.push(Included { source_index: 0, tokens: raw_tokens });
+    pub fn interpret(&mut self, filename: String, source: String) {
+        self.include(&filename, &source);
         while self.include_stack.len() > 0 && self.src_pointer() < self.current_source().len() {
             while self.index < self.tokens.len() {
                 let token = self.tokens[self.index];
