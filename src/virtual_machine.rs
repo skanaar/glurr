@@ -20,14 +20,14 @@ pub struct Included {
 }
 
 pub struct VirtualMachine {
-    pub flag_debug: bool,
+    pub flag_report: bool,
     natives: HashMap<&'static str, Nat>,
     includeables: HashMap<String, String>,
     include_stack: Vec<Included>,
-    index: usize,
-    tokens: Vec<Token>,
-    stack: Vec<Token>,
-    ctrl: Vec<Token>,
+    pub index: usize,
+    pub tokens: Vec<Token>,
+    pub stack: Vec<Token>,
+    pub ctrl: Vec<Token>,
     loops: Vec<Token>,
     syms: Vec<String>,
     strs: Vec<String>,
@@ -39,7 +39,7 @@ pub struct VirtualMachine {
 impl VirtualMachine {
     pub fn new() -> Self {
         Self {
-            flag_debug: false,
+            flag_report: false,
             natives: create_natives(),
             includeables: HashMap::new(),
             include_stack: Vec::new(),
@@ -77,7 +77,7 @@ impl VirtualMachine {
         }
     }
 
-    fn include(&mut self, _: &String, source: &String) {
+    pub fn include(&mut self, _: String, source: String) {
         let tokens: Vec<String> = source
             .split(char::is_whitespace)
             .filter(|s| !s.is_empty())
@@ -88,8 +88,25 @@ impl VirtualMachine {
         }
     }
 
-    pub fn interpret(&mut self, filename: String, source: String) {
-        self.include(&filename, &source);
+    pub fn debug_step(&mut self) -> bool {
+        if self.include_stack.len() > 0 && self.src_pointer() < self.current_source().len() {
+            if self.index < self.tokens.len() {
+                let token = self.tokens[self.index];
+                self.index = self.evaluate(token);
+            } else {
+                let src_i = self.src_pointer();
+                let raw = self.current_source()[src_i].clone();
+                let token = self.parse(&raw);
+                self.move_src_pointer();
+                self.tokens.push(token);
+                self.index = self.evaluate(token);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    pub fn interpret(&mut self) {
         while self.include_stack.len() > 0 && self.src_pointer() < self.current_source().len() {
             while self.index < self.tokens.len() {
                 let token = self.tokens[self.index];
@@ -219,7 +236,7 @@ impl VirtualMachine {
     }
 
     pub fn panic(&self, msg: &'static str) -> ! {
-        if self.flag_debug {
+        if self.flag_report {
             self.print_trace();
             print!("data stack: "); self.stack.print();
             print!("ctrl stack: "); self.ctrl.print();

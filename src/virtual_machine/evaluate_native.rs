@@ -1,9 +1,6 @@
 use image::ImageBuffer;
 use crate::stack::Stack;
-use crate::model::{self, Nat};
-use crate::model::Mode;
-use crate::model::Token::*;
-use crate::model::Token;
+use crate::model::{self, Nat, Mode, Token, Token::*};
 use super::VirtualMachine;
 
 impl VirtualMachine {
@@ -107,7 +104,7 @@ impl VirtualMachine {
                 let Some(content) = self.includeables.get(&name).cloned() else {
                     self.panic("include not listed at startup")
                 };
-                self.include(&name, &content);
+                self.include(name, content);
             }
             Debug => {}
             Def => {

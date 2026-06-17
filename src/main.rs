@@ -5,8 +5,10 @@ use std::time::Instant;
 mod virtual_machine;
 mod model;
 mod stack;
+mod debugger;
 
 use virtual_machine::VirtualMachine;
+use debugger::Debugger;
 
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -16,17 +18,28 @@ fn main() {
     let entry_name = files[0].clone();
     let entry_source = fs::read_to_string(&entry_name).expect("Can't read file");
 
-    let debug = flags.iter().any(|e| e.to_string() == "--debug".to_string());
-    let time = flags.iter().any(|e| e.to_string() == "--time".to_string());
+    let debug = has(&flags, "--debug") || has(&flags, "-d");
+    let report = has(&flags, "--report") || has(&flags, "-r");
+    let time = has(&flags, "--time") || has(&flags, "-t");
 
     let mut vm = VirtualMachine::new();
-    vm.flag_debug = debug;
+    vm.flag_report = report;
     for filename in files {
         let name = filename.clone();
         let source = fs::read_to_string(&filename).expect("Can't read file");
         vm.register_file(name, source);
     }
-    let start = Instant::now();
-    vm.interpret(entry_name, entry_source);
-    if time { println!("\nelapsed: {}ms", start.elapsed().as_millis()) }
+    vm.include(entry_name, entry_source);
+    if debug {
+        let mut app = Debugger::new(vm);
+        app.run().expect("debugger error");
+    } else {
+        let start = Instant::now();
+        vm.interpret();
+        if time { println!("\nelapsed: {}ms", start.elapsed().as_millis()) }
+    }
+}
+
+fn has(args: &Vec<&String>, needle: &str) -> bool {
+    args.iter().any(|e| e.to_string() == needle.to_string())
 }

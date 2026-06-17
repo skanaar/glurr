@@ -1,3 +1,6 @@
+def leetify { 1337 + } ;
+3 leetify
+
 "lib/std.glurr" include
 "lib/complex.glurr" include
 "lib/draw.glurr" include
