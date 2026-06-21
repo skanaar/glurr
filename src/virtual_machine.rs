@@ -215,15 +215,18 @@ impl VirtualMachine {
     }
 
     pub fn serialize_token(&self, token: &Token) -> String {
-        match token {
+        return match token {
             Jump(jmp) => {
                 if let Some(word) = self.dict.iter().find(|e| e.jump == *jmp) {
-                    return format!("Jump({})", self.syms[word.symbol])
+                    self.syms[word.symbol].clone()
                 } else {
-                    return format!("Jump({})", jmp);
+                    format!("Jump({})", jmp)
                 }
             },
-            _ => return format!("{}", token.to_string())
+            Symbol(i) => self.syms[i.clone()].clone(),
+            Str(i) => format!("\"{}\"", self.strs[i.clone()]),
+            Empty => "".to_string(),
+            _ => token.to_string().clone(),
         }
     }
 

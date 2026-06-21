@@ -1,12 +1,10 @@
 use std::time::{Duration, Instant};
-use ratatui::crossterm::event::{self, Event as CrosstermEvent, KeyEvent, MouseEvent};
+use ratatui::crossterm::event::{self, Event as CrosstermEvent, KeyEvent};
 
 #[derive(Clone, Copy, Debug)]
 pub enum Event {
     Tick,
     Key(KeyEvent),
-    Mouse(MouseEvent),
-    Resize(u16, u16),
 }
 
 const POLL_INTERVAL: Duration = Duration::from_millis(250);
@@ -35,8 +33,6 @@ impl Events {
                         }
                         // ignore KeyEventKind::Release on windows
                     }
-                    CrosstermEvent::Mouse(e) => return Ok(Event::Mouse(e)),
-                    CrosstermEvent::Resize(w, h) => return Ok(Event::Resize(w, h)),
                     _ => {}
                 }
             }

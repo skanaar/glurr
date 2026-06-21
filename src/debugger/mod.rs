@@ -58,7 +58,7 @@ impl Debugger {
 
     fn draw(&mut self, frame: &mut Frame) {
         let tokens: Vec<String> =
-            self.vm.tokens.iter().map(|e|e.to_string()).collect();
+            self.vm.tokens.iter().map(|e|self.vm.serialize_token(e)).collect();
         let layout = layout(frame.area());
         frame.render_widget(source_view(self, &tokens), layout.source);
         let stack_items: Vec<Line> =

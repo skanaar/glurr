@@ -1,7 +1,7 @@
 use ratatui::layout::{Constraint, Direction, Layout, Offset, Rect};
 use ratatui::text::{Line, Span};
-use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::widgets::{Block, BorderType, Padding, Paragraph};
+use ratatui::style::{Color, Style, Stylize};
+use ratatui::widgets::{Block, BorderType, Padding, Paragraph, Wrap};
 
 use crate::debugger::Debugger;
 // ---------------------------
@@ -36,11 +36,20 @@ pub fn layout(area: Rect) -> LayoutAreas {
 }
 // ---------------------------
 pub fn source_view<'a>(app: &Debugger, tokens: &'a [String]) -> Paragraph<'a> {
-    let text_toks: Vec<Line> = tokens
+    fn token_style(current: bool, highlight: bool, breakpoint: bool) -> Style {
+        return Style::new()
+            .bg(
+                if current { Color::Yellow }
+                else if breakpoint { Color::Red }
+                else { Color::Reset }
+            )
+            .fg(if highlight { Color::Cyan } else { Color::Reset });
+    }
+    let text_toks: Vec<Span> = tokens
         .iter()
         .enumerate()
         .map(|(i, e)| {
-            Line::from(e.as_str())
+            Span::from(format!("{} ", e))
                 .style(token_style(
                     i+1 == app.vm.index,
                     i == app.pointer as usize,
@@ -48,7 +57,9 @@ pub fn source_view<'a>(app: &Debugger, tokens: &'a [String]) -> Paragraph<'a> {
                 ))
         })
         .collect();
-    Paragraph::new(text_toks).block(panel())
+    Paragraph::new(Line::from(text_toks))
+        .wrap(Wrap{trim:true})
+        .block(panel())
         .style(Style::default().fg(Color::White))
 }
 // ---------------------------
@@ -72,13 +83,6 @@ pub fn statusbar() -> Paragraph<'static> {
     }
     return Paragraph::new(Line::from_iter(instr))
         .style(Style::default().fg(Color::Yellow));
-}
-// ---------------------------
-fn token_style(current: bool, highlight: bool, breakpoint: bool) -> Style {
-    return Style::new()
-        .add_modifier(if current { Modifier::UNDERLINED } else { Modifier::ITALIC })
-        .bg(if breakpoint { Color::Red } else { Color::Reset })
-        .fg(if highlight { Color::Cyan } else { Color::Reset });
 }
 // ---------------------------
 pub fn panel() -> Block<'static> {
