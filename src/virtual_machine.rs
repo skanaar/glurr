@@ -11,7 +11,7 @@ mod pop;
 
 pub struct DictEntry {
     symbol: usize,
-    jump: usize,
+    token: Token,
 }
 
 pub struct Included {
@@ -19,8 +19,13 @@ pub struct Included {
     pub tokens: Vec<String>,
 }
 
+pub struct Options {
+    pub optimize: bool,
+    pub panic_report: bool,
+}
+
 pub struct VirtualMachine {
-    pub flag_report: bool,
+    pub options: Options,
     natives: HashMap<&'static str, Nat>,
     includeables: HashMap<String, String>,
     include_stack: Vec<Included>,
@@ -37,9 +42,9 @@ pub struct VirtualMachine {
 }
 
 impl VirtualMachine {
-    pub fn new() -> Self {
+    pub fn new(options: Options) -> Self {
         Self {
-            flag_report: false,
+            options,
             natives: create_natives(),
             includeables: HashMap::new(),
             include_stack: Vec::new(),
@@ -171,7 +176,7 @@ impl VirtualMachine {
         // word in dict
         if let Some(symb_i) = self.syms.iter().position(|w| w == raw_token) {
             if let Some(entry) = self.dict.iter().find(|e| e.symbol == symb_i) {
-                return Jump(entry.jump)
+                return entry.token
             }
         }
         self.print_trace();
@@ -217,7 +222,7 @@ impl VirtualMachine {
     pub fn serialize_token(&self, token: &Token) -> String {
         return match token {
             Jump(jmp) => {
-                if let Some(word) = self.dict.iter().find(|e| e.jump == *jmp) {
+                if let Some(word) = self.dict.iter().find(|e| e.token == Jump(*jmp)) {
                     self.syms[word.symbol].clone()
                 } else {
                     format!("Jump({})", jmp)
@@ -239,7 +244,7 @@ impl VirtualMachine {
     }
 
     pub fn panic(&self, msg: &'static str) -> ! {
-        if self.flag_report {
+        if self.options.panic_report {
             self.print_trace();
             print!("data stack: "); self.stack.print();
             print!("ctrl stack: "); self.ctrl.print();

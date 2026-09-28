@@ -132,11 +132,21 @@ impl VirtualMachine {
             }
             Semicolon => {
                 if let Some(Jump(jump)) = self.stack.pop() {
-                    if let Some(Symbol(symb_i)) = self.stack.pop() {
-                        self.dict.push(super::DictEntry {
-                            symbol: symb_i,
-                            jump: jump
-                        })
+                    if let Some(Symbol(symbol)) = self.stack.pop() {
+                        let token = if self.options.optimize {
+                            let a = self.tokens[self.index - 3];
+                            let b = self.tokens[self.index - 2];
+                            let c = self.tokens[self.index - 1];
+                            if c == Token::Native(Nat::CloseBrace)
+                                && a == Token::Native(Nat::OpenBrace) {
+                                b
+                            } else {
+                                Jump(jump)
+                            }
+                        } else {
+                            Jump(jump)
+                        };
+                        self.dict.push(super::DictEntry { symbol, token });
                     } else { self.panic("; requires a symbol") }
                 } else { self.panic("; requires a jump") }
             }

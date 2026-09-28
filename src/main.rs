@@ -10,6 +10,8 @@ mod debugger;
 use virtual_machine::VirtualMachine;
 use debugger::Debugger;
 
+use crate::virtual_machine::Options;
+
 fn main() {
     let args: Vec<String> = env::args().skip(1).collect();
     let flags: Vec<&String> =
@@ -19,11 +21,11 @@ fn main() {
     let entry_source = fs::read_to_string(&entry_name).expect("Can't read file");
 
     let debug = has(&flags, "--debug") || has(&flags, "-d");
-    let report = has(&flags, "--report") || has(&flags, "-r");
+    let panic_report = has(&flags, "--report") || has(&flags, "-r");
     let time = has(&flags, "--time") || has(&flags, "-t");
+    let optimize = has(&flags, "--optimize") || has(&flags, "-o");
 
-    let mut vm = VirtualMachine::new();
-    vm.flag_report = report;
+    let mut vm = VirtualMachine::new(Options { panic_report, optimize });
     for filename in files {
         let name = filename.clone();
         let source = fs::read_to_string(&filename).expect("Can't read file");
