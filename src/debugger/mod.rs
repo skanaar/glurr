@@ -13,6 +13,7 @@ use ratatui::widgets::Paragraph;
 use tui::Tui;
 
 use crate::debugger::ui::{statusbar, layout, panel, source_view};
+use crate::model::{Nat, Token};
 use crate::virtual_machine::VirtualMachine;
 
 pub struct Debugger {
@@ -26,7 +27,7 @@ impl Debugger {
     pub fn new(vm: VirtualMachine) -> Self {
         Self { should_quit: false, pointer: 0, breakpoints: Vec::new(), vm: vm }
     }
-    pub fn run(&mut self) -> std::io::Result<()> {
+    pub fn start(&mut self) -> std::io::Result<()> {
         let backend = CrosstermBackend::new(std::io::stderr());
         let mut terminal = Terminal::new(backend)?;
         let mut events = Events::new();
@@ -44,6 +45,14 @@ impl Debugger {
         Ok(())
     }
     fn step(&mut self) { self.should_quit = !self.vm.debug_step(); }
+    fn run(&mut self) {
+        while !self.should_quit {
+            if let Some(Token::Native(Nat::Debug)) = self.vm.tokens.last() {
+                break;
+            }
+            self.should_quit = !self.vm.debug_step();
+        }
+    }
     fn quit(&mut self) { self.should_quit = true }
     fn left(&mut self) { self.pointer = max(0, self.pointer - 1) }
     fn right(&mut self) { self.pointer = max(0, self.pointer + 1) }
@@ -83,6 +92,7 @@ impl Debugger {
         match e.code {
             Esc | Char('q') => self.quit(),
             Char('b') => self.toggle_breakpoint(),
+            Char('r') => self.run(),
             Char('s') => self.step(),
             Char('c') | Char('C') if e.modifiers == ctrl => self.quit(),
             Right => self.right(),

@@ -1,0 +1,21 @@
+"lib/std.glurr" include
+"lib/rand.glurr" include
+
+( random distribution )
+def iterations { 100000 } ;
+def bucket-count { 10 } ;
+var buckets
+bucket-count allot buckets !
+
+def random-bucket { rand-normalized bucket-count * floor } ;
+def add-at ( delta i array - ) { over over get 4 pick + rot rot set drop } ;
+def put-random-number-in-bucket { 1 random-bucket buckets @ add-at } ;
+
+{ put-random-number-in-bucket } 0 iterations range enumerate
+
+( visualize histogram )
+def bar-max ( - n ) { iterations bucket-count / 10 / } ;
+def bar-length ( i - n ) { buckets @ get bar-max / floor } ;
+def print-bar ( i - ) { { "#" . } 0 rot bar-length range enumerate "\n" . } ;
+
+{ i print-bar } 0 bucket-count range enumerate

@@ -34,7 +34,7 @@ fn main() {
     vm.include(entry_name, entry_source);
     if debug {
         let mut app = Debugger::new(vm);
-        app.run().expect("debugger error");
+        app.start().expect("debugger error");
     } else {
         let start = Instant::now();
         vm.interpret();

@@ -1,0 +1,8 @@
+( random )
+var rand-val 4711 rand-val !
+def rand-seed ( n - ) { rand-val ! } ;
+def rand-max { 35506807 } ; ( 7537 4711 * )
+def rand-next { rand-val @ 17 * 11 + rand-max mod rand-val ! } ;
+def rand ( max - n ) { rand-next rand-val @ swap mod } ;
+def rand-normalized ( - n ) { 1048576 rand 1048576 / } ;
+def rand-bool ( - bool ) { 1024 rand 512 < } ;
