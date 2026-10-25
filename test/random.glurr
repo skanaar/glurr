@@ -17,5 +17,6 @@ def put-random-number-in-bucket { 1 random-bucket buckets @ add-at } ;
 def bar-max ( - n ) { iterations bucket-count / 10 / } ;
 def bar-length ( i - n ) { buckets @ get bar-max / floor } ;
 def print-bar ( i - ) { { "#" . } 0 rot bar-length range enumerate "\n" . } ;
-
 { i print-bar } 0 bucket-count range enumerate
+
+false

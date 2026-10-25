@@ -1,0 +1,9 @@
+"lib/std.glurr" depend
+
+var assert-passed
+true assert-passed !
+
+def test-suite ( s - ) { "\n--------\n" . . "\n" . } ;
+def print-test { assert-passed @ { "-:" . } { "x:" . } if-else . "\n" . } ;
+def test ( name code - ) { true assert-passed ! invoke print-test } ;
+def test-assert ( b - ) { assert-passed @ and assert-passed ! } ;

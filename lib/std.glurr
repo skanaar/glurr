@@ -1,17 +1,23 @@
+( stack manipulation )
 def -rot ( a b c - c a b ) { rot rot } ;
 def 2dup ( a b - a b a b ) { swap dup rot dup rot swap } ;
 def 2over { 4 pick 4 pick } ;
 def over ( a b - a b a ) { swap dup rot swap } ;
+
+( logic )
 def if-else ( bool code code - ) { >§ over >§ if §> not §> if } ;
-def +1! { dup @ 1 + swap ! } ;
+def and ( b b - b ) { not { drop false } if } ;
+
+( math )
 def sq { dup * } ;
 def max { 2dup > -rot ? } ;
 def min { 2dup < -rot ? } ;
 def >= { < not } ;
 def <= { > not } ;
 
+( misc )
+def +1! { dup @ 1 + swap ! } ;
 def .n { . "\n" . } ;
-
 def for { ' range emit ' enumerate emit } ;
 
 ( a documenting word )

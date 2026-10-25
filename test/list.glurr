@@ -1,0 +1,25 @@
+"lib/std.glurr" include
+"lib/list.glurr" include
+"lib/test.glurr" include
+
+"List" test-suite
+
+var .items
+
+"append_to_list" {
+  7 .items list
+  .items length 0 = test-assert
+  56 .items append
+  .items length 1 = test-assert
+  99 .items append
+  .items length 2 = test-assert
+} test
+
+"list_builder" {
+  7 .items list
+  56 .items append
+  .items 8 , 5 , 2 ,.
+  .items length 4 = test-assert
+} test
+
+false

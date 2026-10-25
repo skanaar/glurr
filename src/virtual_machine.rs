@@ -1,4 +1,4 @@
-use std::cmp::{max, min};
+use std::cmp::min;
 use std::collections::HashMap;
 
 use crate::model;
@@ -236,8 +236,8 @@ impl VirtualMachine {
     }
 
     pub fn print_trace(&self) {
-        let from = max(0, self.index-15);
-        let to = min(self.index-15, self.tokens.len()-1);
+        let from = self.index - min(15, self.index);
+        let to = min(from, self.tokens.len()-1);
         let context = self.tokens[from..=to].iter();
         let strings: Vec<String> = context.map(|x| self.serialize_token(x)).collect();
         println!("\x1b[93m{}\x1b[0m", strings.join(" "));
